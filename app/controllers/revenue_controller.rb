@@ -1,5 +1,5 @@
 class RevenueController < ApplicationController
 	def index
-		Query.getRevenueData
+		results = Query.get_data
 	end
 end

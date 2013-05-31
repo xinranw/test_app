@@ -1,9 +1,12 @@
 source 'https://rubygems.org'
 
 gem 'rails', '3.2.13'
+gem 'haml'
 
 group :development do
+  gem 'ruby-debug19'
   gem 'sqlite3', '1.3.5'
+  gem 'mysql2'
 end
 
 group :development, :test do
