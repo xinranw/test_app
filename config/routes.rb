@@ -1,3 +1,5 @@
 TestApp::Application.routes.draw do
-  get "revenue/index"
+  get "query/index"
+
+  root to: 'query#index'
 end
