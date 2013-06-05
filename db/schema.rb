@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 0) do
+ActiveRecord::Schema.define(:version => 20130530201615) do
 
   create_table "Sheet1", :id => false, :force => true do |t|
     t.string "Source",           :null => false
@@ -2136,6 +2136,11 @@ ActiveRecord::Schema.define(:version => 0) do
   end
 
   add_index "provider_versions", ["provider_id", "is_approved"], :name => "index_provider_versions_on_provider_id_and_is_approved"
+
+  create_table "queries", :force => true do |t|
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
 
   create_table "reasons", :force => true do |t|
     t.string   "reason"
