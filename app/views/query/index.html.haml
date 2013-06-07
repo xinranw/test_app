@@ -1,13 +1,12 @@
 %form
   %select{:id => "source"}
-    %option{:value => "total_rev"} Total Revenue
     %option{:value => "bookings_rev"} Bookings Revenue
     %option{:value => "loots_rev"} Loots Revenue
     %option{:value => "bookings"} Number of Bookings
     %option{:value => "loots"} Number of Loots
   %select{:id => "time_format"}
     %option{:value => "year"} Year
-    %option{:value => "month"} Month
+    %option{:selected => "selected", :value => "month"} Month
     %option{:value => "day"} Day
     %option{:value => "hour"} Hour
   %select{:id => "location"}
@@ -16,18 +15,54 @@
     %option{:value => "la"} Los Angeles
     %option{:value => "chi"} Chicago
     %option{:value => "sfo"} San Francisco
-  Start date:
-  %input{:type => " ", :class => "datepicker", :id => "start_date"}
-  End date:
-  %input{:type => "text", :class => "datepicker", :id => "end_date"} 
-  %button{:type => "button", :class => "button"}Submit
+%form
+  %input{:type => "checkbox", :id => "comp"}Time Comparison
+  %div{:id => "range1"}
+    Range 1:
+    Start date:
+    %input{:type => "text", :class => "datepicker", :id => "start_date"}
+    End date:
+    %input{:type => "text", :class => "datepicker", :id => "end_date"} 
+    %button{:type => "button", :checked => "true", :class => "button"}Submit
+  %div{:id => "range2"}
+    Range 2:
+    Start date:
+    %input{:type => "text", :class => "datepicker", :id => "start_date2"}
+    End date:
+    %input{:type => "text", :class => "datepicker", :id => "end_date2"} 
+
 
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
 
 :javascript
+  var d = new Date();
+  var output = d.getFullYear() + '-' +
+    (d.getMonth()<10 ? '0' : '') + (d.getMonth() + 1) + '-' +
+    (d.getDay()<10 ? '0' : '') + d.getDay();
+  $( "#end_date" ).val(output);
+
+  $("#range2").hide();
+  $("#comp").click(function() {
+    if( $(this).is(':checked')) {
+        $("#range2").show();
+    } else {
+        $("#range2").hide();
+    };
+  });
+
+  $(function() {
+    $( ".datepicker" ).datepicker({
+      dateFormat: "yy-mm-dd"
+    });
+  });
+
+:javascript
   $(".button").click(function(){
-    console.log($("#start_date").val());
+    $.ajax(get_data());
+  });
+
+  function get_data(){
     var options = {
       type: "GET",
       url: "/query/fetch",
@@ -36,167 +71,108 @@
         time_format: $("#time_format").val(),
         start_date: $("#start_date").val(),
         end_date: $("#end_date").val(),
+        comp: $("#comp").is(':checked'),
+        start_date2: $("#start_date2").val(),
+        end_date2: $("#end_date2").val(),
       },
       dataType: "json",
       success: function(data){
-        var xvals = new Array;
-        var yvals = new Array;
-        for (var i = 0; i < data.length; i++){
-          xvals[i] = new Date(Date.parse(data[i].counttime));
-          yvals[i] = data[i].countnum;
-          switch($("#time_format").val()){
-            case "hour":
-              xvals[i] = xvals[i].getHours();
-              break;
-            case "day":
-              xvals[i] = xvals[i].getFullYear() + "-" + (xvals[i].getMonth() + 1) + "-" + (xvals[i].getDate()+1);
-              break;
-            case "month":
-              xvals[i] = xvals[i].getFullYear() + "-" + (xvals[i].getMonth() + 1);
-              break;
-            case "year":
-              xvals[i] = xvals[i].getFullYear() + 1;
-              break;
-            default:
-              console.log("fail");
-          };
-        };
-        addGraph(xvals, yvals);
+        var f_data = format_data(data, $("#time_format").val(), $("#comp").is(':checked'));
+        add_graph(graph_data(f_data), $("#source").val());
       },
       error: function(){
         console.log("error");
       }
     };
-    $.ajax(options);
-  });
+    return options;
+  };
 
-  function addGraph(xvals, yvals){
-    var chart = nv.models.discreteBarChart()
-      .x(function(d) { return d.label })
-      .y(function(d) { return d.value })
-      .staggerLabels(true)
-      //.staggerLabels(historicalBarChart[0].values.length > 8)
-      .tooltips(false)
-      .showValues(true);
+  function format_data(data, time_format, comp){
+    for (var i = 0; i < data.length; i++){
+      for (var j = 0; j < data[i].length; j++){
+        data[i][j].x = new Date(Date.parse(data[i][j].x));
+        data[i][j].y = parseFloat(data[i][j].y);
+        var xval = data[i][j].x;
+        switch(time_format){
+          case "hour":
+          data[i][j].x = xval.getHours();
+          break;
+          case "day":
+          data[i][j].x = xval.getFullYear() + "-" + (xval.getMonth() + 1) + "-" + xval.getDate();
+          break;
+          case "month":
+          data[i][j].x = xval.getFullYear() + "-" + (xval.getMonth() + 1);
+          break;
+          case "year":
+          data[i][j].x = xval.getFullYear() + 1;
+          break;
+          default:
+          alert("wrong time format");
+        };
+        if (comp){
+          switch(time_format){
+            case "day":
+            data[i][j].x = (xval.getMonth() + 1) + "-" + xval.getDate();
+            break;
+            case "month":
+            data[i][j].x = (xval.getMonth() + 1);
+            break;
+            case "year":
+            data[i][j].x = xval.getFullYear() + 1;
+            break;
+            default:
+            ;
+          }
+        };
+      }
+    }
+    return data;
+  };
+
+
+  function graph_data(data){
+    var test_data = [];
+    for (var i = 0; i < data.length; i++){
+      test_data.push({key:'Range ' + i, values: data[i]}); 
+    };
+    return test_data;
+  }
+
+  function add_graph(data, source){
+    var width = nv.utils.windowSize().width - 40,
+    height = nv.utils.windowSize().height - 40;
+
+    var chart = nv.models.multiBarChart();
+
+    chart.multibar
+      .hideable(true);
+
+    chart.reduceXTicks(true).staggerLabels(false);
+    
+    chart.margin({left: 80});
+    
+    chart.xAxis
+        .showMaxMin(false)
+        .axisLabel($("#time_format").val());
 
     chart.yAxis
-      .axisLabel('Count')
-      .tickFormat(d3.format('g'));
+        .showMaxMin(true)
+        .tickFormat(d3.format(',1f'));
+    
+    if (source.indexOf("rev") !== -1){
+      chart.yAxis.axisLabel('Thousands of $');
+    } else {
+      chart.yAxis.axisLabel('Number of ' + source);
+    }
 
     d3.select('#chart1 svg')
-        .datum(datafun(xvals, yvals))
-      .transition().duration(500)
-        .call(chart);
+        .datum(data)
+      .transition().duration(200).call(chart);
 
     nv.utils.windowResize(chart.update);
 
+    chart.dispatch.on('stateChange', function(e) { nv.log('New State:', JSON.stringify(e)); });
+
     return chart;
-  }
-
-  function datafun(xvals, yvals){
-    var testdata = [];
-    for (var i = 0; i < xvals.length; i++) {
-      testdata.push({label: xvals[i], series: 0, value: yvals[i]}); 
-    }
-    return [
-    {
-      area: false,
-      values: testdata,
-      key: "testdata",
-      color: "#ff7f0e"
-    }
-    ];
-  }
-
-:javascript
-  function oldgraph(xvals, yvals){ 
-    var margin = {top: 30, right: 10, bottom: 200, left: 70}
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
-
-    var y = d3.scale.linear()
-        .domain([0, Math.abs(d3.max(yvals))])
-        .range([height,0])
-        .nice();
-
-    var x = d3.scale.ordinal()
-        .domain(d3.range(xvals.length))
-        .rangeRoundBands([0, width]);
-
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
-
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .tickValues(xvals)
-        .orient("bottom");
-
-    var svg = d3.select("body").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    svg.selectAll(".bar")
-        .data(yvals)
-        .enter().append("rect")
-        .attr("y", function(d) { return y(Math.max(0, d)); })
-        .attr("x", function(d, i) { return x(i); })
-        .attr("height", function(d) { return Math.abs(y(d) - y(0)); })
-        .attr("width", x.rangeBand());
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0, " + height + ")")
-        .call(xAxis)
-        .selectAll("text")  
-            .style("text-anchor", "end")
-            .attr("dx", -10)
-            .attr("dy", "1em")
-            .attr("transform", function(d) {
-                return "rotate(-65)" 
-                });
-
-    // svg.selectAll("text")
-    //     .attr("class", "label")
-    //     .data(yvals)
-    //     .enter().append("text")
-    //     .attr("y", function(d) { return d; })
-    //     .attr("x", function(d,i) { return x(i) + x.rangeBand() / 2; })
-    //     .attr("dy", 20)
-    //     .text(String);
-
-    svg.append("text")
-        .attr("class", "y label")
-        .attr("text-anchor", "end")
-        .attr("x", - height * .5)
-        .attr("dy", - 60)
-        .attr("transform", "rotate(-90)")
-        .text("# of Bookings");
-
-    svg.append("text")
-        .attr("class", "x label")
-        .attr("text-anchor", "end")
-        .attr("y", height+50)
-        .attr("dx", width/2)
-        .text("Time");
-
-    svg. append("text")
-        .attr("class", "title")
-        .attr("text-anchor", "middle")
-        .attr("x", (width + margin.left + margin.right)/2)
-        .text("Bookings frequency by time of day")
-  }
+  };
   
-
-:javascript
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      dateFormat: "yy-mm-dd"
-    });
-  });
