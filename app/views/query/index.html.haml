@@ -1,21 +1,45 @@
 %form
-  %select{:id => "source"}
-    %option{:value => "bookings_rev"} Bookings Revenue
-    %option{:value => "loots_rev"} Loots Revenue
-    %option{:value => "bookings"} Number of Bookings
-    %option{:value => "loots"} Number of Loots
+  %select{:id => "ser_type"}
+    %option{:value => "bookings"} Bookings
+    %option{:value => "loots"} Loots
+  %select{:id => "ser_value"}
+    %option{:value => "rev"} Revenue
+    %option{:value => "num"} Number Of
+  %select{:id => "city"} 
+    %option{:value => ""} All Cities
+    %option{:value => "newyork"} New York
+    %option{:value => "la"} LA
+    %option{:value => "sf"} San Francisco
+    %option{:value => "miami"} Miami Boston
+    %option{:value => "atlanta"} Atlanta
+    %option{:value => "austin"} Austin
+    %option{:value => "chicago"} Chicago
+    %option{:value => "dallas"} Dallas
+    %option{:value => "denver"} Denver
+    %option{:value => "houston"} Houston
+    %option{:value => "vegas"} Las Vegas
+    %option{:value => "philadelphia"} Philadelphia
+    %option{:value => "phoenix"} Phoenix
+    %option{:value => "portland"} Portland
+    %option{:value => "seattle"} Seattle
+    %option{:value => "dc"} Washington DC
+    %option{:value => "sd"} San Diego
   %select{:id => "time_format"}
     %option{:value => "year"} Year
     %option{:selected => "selected", :value => "month"} Month
     %option{:value => "day"} Day
     %option{:value => "hour"} Hour
-  %select{:id => "location"}
-    %option{:value => "all_cities"} All Cities
-    %option{:value => "nyc"} New York
-    %option{:value => "la"} Los Angeles
-    %option{:value => "chi"} Chicago
-    %option{:value => "sfo"} San Francisco
-%form
+  %select{:id => "sort"}
+    %option{:value => "by_time"} By Time
+    %option{:value => "by_cats"} By Service Category
+    %option{:value => "by_location"} By Location
+  %select{:id => "cats_num"}
+    %option{:value => 5} Top 5
+    %option{:value => 10} Top 10
+    %option{:value => 25} Top 25
+    %option{:value => 1000} Show All
+
+%form{:id => "time_based"}
   %input{:type => "checkbox", :id => "comp"}Time Comparison
   %div{:id => "range1"}
     Range 1:
@@ -23,19 +47,30 @@
     %input{:type => "text", :class => "datepicker", :id => "start_date"}
     End date:
     %input{:type => "text", :class => "datepicker", :id => "end_date"} 
-    %button{:type => "button", :checked => "true", :class => "button"}Submit
+    %button{:type => "button", :checked => "true", :id => "submit"}Submit
   %div{:id => "range2"}
     Range 2:
     Start date:
     %input{:type => "text", :class => "datepicker", :id => "start_date2"}
     End date:
     %input{:type => "text", :class => "datepicker", :id => "end_date2"} 
-
+%button{:id => "export_data", :path => "#{query_index_path}.csv"}Export Data
 
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
 
 :javascript
+  $("#export_data").click(function(){
+    console.log($(this).attr("path"));
+    window.location.href = $(this).attr("path");
+  });
+
+  $(function() {
+    $( ".datepicker" ).datepicker({
+      dateFormat: "yy-mm-dd"
+    });
+  });
+
   var d = new Date();
   var output = d.getFullYear() + '-' +
     (d.getMonth()<10 ? '0' : '') + (d.getMonth() + 1) + '-' +
@@ -51,128 +86,17 @@
     };
   });
 
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      dateFormat: "yy-mm-dd"
-    });
-  });
-
-:javascript
-  $(".button").click(function(){
-    $.ajax(get_data());
-  });
-
-  function get_data(){
-    var options = {
-      type: "GET",
-      url: "/query/fetch",
-      data: {
-        source: $("#source").val(),
-        time_format: $("#time_format").val(),
-        start_date: $("#start_date").val(),
-        end_date: $("#end_date").val(),
-        comp: $("#comp").is(':checked'),
-        start_date2: $("#start_date2").val(),
-        end_date2: $("#end_date2").val(),
-      },
-      dataType: "json",
-      success: function(data){
-        var f_data = format_data(data, $("#time_format").val(), $("#comp").is(':checked'));
-        add_graph(graph_data(f_data), $("#source").val());
-      },
-      error: function(){
-        console.log("error");
-      }
-    };
-    return options;
-  };
-
-  function format_data(data, time_format, comp){
-    for (var i = 0; i < data.length; i++){
-      for (var j = 0; j < data[i].length; j++){
-        data[i][j].x = new Date(Date.parse(data[i][j].x));
-        data[i][j].y = parseFloat(data[i][j].y);
-        var xval = data[i][j].x;
-        switch(time_format){
-          case "hour":
-          data[i][j].x = xval.getHours();
-          break;
-          case "day":
-          data[i][j].x = xval.getFullYear() + "-" + (xval.getMonth() + 1) + "-" + xval.getDate();
-          break;
-          case "month":
-          data[i][j].x = xval.getFullYear() + "-" + (xval.getMonth() + 1);
-          break;
-          case "year":
-          data[i][j].x = xval.getFullYear() + 1;
-          break;
-          default:
-          alert("wrong time format");
-        };
-        if (comp){
-          switch(time_format){
-            case "day":
-            data[i][j].x = (xval.getMonth() + 1) + "-" + xval.getDate();
-            break;
-            case "month":
-            data[i][j].x = (xval.getMonth() + 1);
-            break;
-            case "year":
-            data[i][j].x = xval.getFullYear() + 1;
-            break;
-            default:
-            ;
-          }
-        };
-      }
-    }
-    return data;
-  };
-
-
-  function graph_data(data){
-    var test_data = [];
-    for (var i = 0; i < data.length; i++){
-      test_data.push({key:'Range ' + i, values: data[i]}); 
-    };
-    return test_data;
-  }
-
-  function add_graph(data, source){
-    var width = nv.utils.windowSize().width - 40,
-    height = nv.utils.windowSize().height - 40;
-
-    var chart = nv.models.multiBarChart();
-
-    chart.multibar
-      .hideable(true);
-
-    chart.reduceXTicks(true).staggerLabels(false);
-    
-    chart.margin({left: 80});
-    
-    chart.xAxis
-        .showMaxMin(false)
-        .axisLabel($("#time_format").val());
-
-    chart.yAxis
-        .showMaxMin(true)
-        .tickFormat(d3.format(',1f'));
-    
-    if (source.indexOf("rev") !== -1){
-      chart.yAxis.axisLabel('Thousands of $');
+  $("#cats_num").hide();
+  $("#sort").change(function(){
+    if( $(this).val() == "by_cats" || $(this).val() == "by_location") {
+        $("#cats_num").show();
     } else {
-      chart.yAxis.axisLabel('Number of ' + source);
-    }
+        $("#cats_num").hide();
+    };
+  });
 
-    d3.select('#chart1 svg')
-        .datum(data)
-      .transition().duration(200).call(chart);
-
-    nv.utils.windowResize(chart.update);
-
-    chart.dispatch.on('stateChange', function(e) { nv.log('New State:', JSON.stringify(e)); });
-
-    return chart;
-  };
+  $("#submit").click(function(){
+    $.ajax(get_data('#{query_index_path}'));
+  });
+  
   
