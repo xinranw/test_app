@@ -1,15 +1,23 @@
 class QueryController < ApplicationController
-  def index
+  def fetch
+    if params[:comp] == 'true'
+      params_2 = params
+      params_2[:start_date] = params[:start_date2]
+      params_2[:end_date] = params[:end_date2]
+      query2 = Query.get(params[:ser_type], params_2)
+    end
+    query = Query.get(params[:ser_type], params)
+
     case (params[:sort])
       when "by_time"
-        @results = [Query.time_data(params[:ser_type], params[:ser_value], params[:city], params[:time_format], params[:start_date], params[:end_date])]
-        if (params[:comp] == "true")
-          @results = @results.append(Query.time_data(params[:ser_type], params[:ser_value], params[:city], params[:time_format], params[:start_date2], params[:end_date2]))
+        @results = [query.execute_time_query]
+        if params[:comp] == 'true'
+          @results = @results.append(query2.execute_time_query)
         end
-      when "by_cats", "by_location"
-        @results = [Query.categorical_data(params[:ser_type], params[:ser_value], params[:city], params[:time_format], params[:start_date], params[:end_date], params[:sort], params[:res_num])]
-        if (params[:comp] == "true")
-          @results = @results.append(Query.categorical_data(params[:ser_type], params[:ser_value], params[:city], params[:time_format], params[:start_date2], params[:end_date2], params[:sort], params[:res_num]))
+      else 
+        @results = [query.execute_category_query]
+        if params[:comp] == 'true'
+          @results = @results.append(query2.execute_category_query)
         end
     end
 
@@ -20,14 +28,10 @@ class QueryController < ApplicationController
     # end
 
     respond_to do |format|
-      format.html {}
+      format.html 
       format.json { render :json => @results }
       format.csv { render :csv => @results }
+      end
     end
-  end
 
-  def index_csv
-    puts "here"
   end
-
-end
