@@ -3,9 +3,9 @@
     %option{:value => "bookings"} Bookings
     %option{:value => "loots"} Loots
   %select{:id => "ser_value"}
-    %option{:value => "rev"} Revenue
-    %option{:value => "num"} Number Of
-  %select{:id => "city"} 
+    %option{:id => "num", :value => "num"} Number Of
+    %option{:id => "rev", :value => "rev"} Revenue
+  %select{:id => "city"}
     %option{:value => ""} All Cities
     %option{:value => "newyork"} New York
     %option{:value => "la"} LA
@@ -37,7 +37,6 @@
     %option{:value => 5} Top 5
     %option{:value => 10} Top 10
     %option{:value => 25} Top 25
-    %option{:value => 1000} Show All
 
 %form{:id => "time_based"}
   %input{:type => "checkbox", :id => "comp"}Time Comparison
@@ -54,17 +53,12 @@
     %input{:type => "text", :class => "datepicker", :id => "start_date2"}
     End date:
     %input{:type => "text", :class => "datepicker", :id => "end_date2"} 
-%button{:id => "export_data", :path => "#{query_index_path}.csv"}Export Data
+%button{:id => "export_data", :path => "#{query_fetch_path}.csv"}Export Data
 
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
 
 :javascript
-  $("#export_data").click(function(){
-    console.log($(this).attr("path"));
-    window.location.href = $(this).attr("path");
-  });
-
   $(function() {
     $( ".datepicker" ).datepicker({
       dateFormat: "yy-mm-dd"
@@ -95,8 +89,37 @@
     };
   });
 
+  $("#ser_value").children().hide();
+
+  var ajax_data;
   $("#submit").click(function(){
-    $.ajax(get_data('#{query_index_path}'));
+    ajax_graph_data = [];
+
+    var ajax_options = {
+      type: "GET",
+      url: '#{query_fetch_path}',
+      data: {
+        ser_type: $("#ser_type").val(),
+        ser_value: $("#ser_value").val(),
+        city: $("#city").val(),
+        time_format: $("#time_format").val(),
+        sort: $("#sort").val(),
+        res_num: $("#cats_num").val(),
+        comp: $("#comp").is(':checked'),
+        start_date: $("#start_date").val(),
+        end_date: $("#end_date").val(),
+        start_date2: $("#start_date2").val(),
+        end_date2: $("#end_date2").val(),
+      },
+      dataType: "json",
+      success: function(data){
+        ajax_data = data;
+        var f_data = format_data(data, $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
+        add_graph(graph_data(f_data), $("#ser_type").val(), $("#ser_value").val(), $("#sort").val());
+      },
+      error: function(){
+        console.log("error");
+      }
+    };
+    $.ajax(ajax_options);
   });
-  
-  
