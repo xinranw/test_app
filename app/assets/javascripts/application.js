@@ -40,21 +40,21 @@ function format_data(data, time_format, comp, sort, cats_num){
           default:
           alert("wrong time format");
         };
-        if (comp){
-          switch(time_format){
-            case "day":
-            data[i][j].x = (xval.getMonth() + 1) + "-" + xval.getDate();
-            break;
-            case "month":
-            data[i][j].x = (xval.getMonth() + 1);
-            break;
-            case "year":
-            data[i][j].x = xval.getFullYear() + 1;
-            break;
-            default:
-            ;
-          }
-        };
+        // if (comp){
+        //   switch(time_format){
+        //     case "day":
+        //     data[i][j].x = (xval.getMonth() + 1) + "-" + xval.getDate();
+        //     break;
+        //     case "month":
+        //     data[i][j].x = (xval.getMonth() + 1);
+        //     break;
+        //     case "year":
+        //     data[i][j].x = xval.getFullYear() + 1;
+        //     break;
+        //     default:
+        //     ;
+        //   }
+        // };
       }
     };
   } else if (sort == "by_cats" || sort == "by_location"){
@@ -119,6 +119,8 @@ function add_graph(data, ser_type, ser_value, sort){
     yAxisLabel = "Bookings";
   else if (ser_type == "loots")
     yAxisLabel = "Loots";
+  else if (ser_type == "signups")
+    yAxisLabel = "New User Signups"
   else 
     alert("invalid service type");
 

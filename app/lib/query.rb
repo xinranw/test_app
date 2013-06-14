@@ -12,7 +12,8 @@ class Query < ActiveRecord::Base
         BookingQuery.new(params)
       when "loots" 
         LootQuery.new(params)
-      when nil
+      when "signups"
+        SignupQuery.new(params)
       else raise StandardError.new "Invalid data type #{ser_type} passed to Query.get"
     end
   end
