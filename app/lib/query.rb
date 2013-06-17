@@ -6,14 +6,14 @@ class Query < ActiveRecord::Base
   # @return [Query] that will generate the appropriate
   #   SQL.  Otherwise it will raise an exception if passed an invalid
   #   type.
-  def self.get(ser_type, params)
+  def self.get(ser_value, ser_type, params)
     case ser_type
       when "bookings"
-        BookingQuery.new(params)
+        return BookingQuery.new(params)
       when "loots" 
-        LootQuery.new(params)
+        return LootQuery.new(params)
       when "signups"
-        SignupQuery.new(params)
+        return SignupQuery.new(params)
       else raise StandardError.new "Invalid data type #{ser_type} passed to Query.get"
     end
   end
@@ -28,6 +28,10 @@ class Query < ActiveRecord::Base
     return connection.select_all(sql)
   end
 
+  def execute_heatmap_query
+    sql = get_heatmap_query
+    return connection.select_all(sql)
+  end
   protected
 
   # @return [String] sql that returns [[category, value], ...]

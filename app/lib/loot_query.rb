@@ -124,4 +124,48 @@ class LootQuery < Query
     "
     return @@sql
   end
+
+  def get_heatmap_query
+    x = "gc.latitude"
+    y = "gc.longitude"
+    count = "count(z.name)"
+    table_name = "invoice_items ii"
+    join_statements = "
+    JOIN invoices i
+      ON i.id = ii.invoice_id
+      AND i.billable_type = 'client'
+      AND ii.type = 'LootServiceInvoiceItem'
+    JOIN clients c
+      ON c.id = billable_id
+    JOIN addresses a
+      ON c.address_id = a.id
+    JOIN zones z
+      ON z.id = a.zone_id
+    JOIN addresses z_a
+      ON z_a.id = z.address_id
+    JOIN geocodings g
+      ON z.id = g.geocodable_id
+      AND g.geocodable_type = 'Zone'
+    JOIN geocodes gc
+      ON g.geocode_id = gc.id
+    JOIN lb_city_enums lbce
+      ON lbce.id = c.lb_city_enum_id
+    "
+    created_at = "ii.created_at"
+    start_date = @@params[:start_date]
+    end_date = @@params[:end_date]
+    city = ((@@params[:city] == "") ? "" : "&& lbce.name = '#{@@params[:city]}'")
+    group_statement = "GROUP BY z.name"
+    sql = "
+      SELECT 
+        #{x} as x, #{y} as y, #{count} as count
+      FROM 
+        #{table_name}
+      #{join_statements}
+      WHERE 
+        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
+      #{group_statement}
+    "
+  end
+
 end

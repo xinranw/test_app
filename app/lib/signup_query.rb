@@ -58,60 +58,44 @@ class SignupQuery < Query
     return @@sql
   end
 
-  def get_category_query
+  def get_category_data
+    raise StandardError.new"Signups cannot be categorical"
+  end
+
+  def get_heatmap_query
+    x = "gc.latitude"
+    y = "gc.longitude"
+    count = "count(z.name)"
+    table_name = "clients c"
     join_statements = "
-      JOIN lb_city_enums as lbce
-        ON sp.lb_city_enum_id = lbce.id
-      JOIN service_provider_services as sps
-        ON sp.id = sps.service_provider_id
-      JOIN bookings as b 
-        ON sps.id = b.service_provider_service_id
+      JOIN addresses a
+        ON c.address_id = a.id
+      JOIN zones z
+        ON z.id = a.zone_id
+      JOIN addresses z_a
+        ON z_a.id = z.address_id
+      JOIN geocodings g
+        ON z.id = g.geocodable_id
+        AND g.geocodable_type = 'Zone'
+      JOIN geocodes gc
+        ON g.geocode_id = gc.id
+      JOIN lb_city_enums lbce
+        ON lbce.id = c.lb_city_enum_id
     "
-    case @@params[:sort]
-      when "by_cats"
-        x = "sc.display_name"
-        group_by = "sc.display_name"
-        join_statements += "
-          JOIN service_categories as sc
-            ON sps.service_category_id = sc.id"
-      when "by_location"
-        x = "z.name"
-        group_by = "z.name"
-        join_statements +="
-          JOIN zones as z
-            ON sp.zone_id = z.id"
-    end
-    case @@params[:ser_value]
-      when "rev"
-        y = "round(sum(b.price) / 1000, 0)"
-      when "num"
-        if @@params[:sort] == "by_cats"
-          y = "count(sc.display_name)"
-        else @@params[:sort] == "by_location"
-          y = "count(z.name)"
-        end
-    end
-    table_name = "service_providers as sp"
-    created_at = "b.created_at"
+    created_at = "c.created_at"
     start_date = @@params[:start_date]
     end_date = @@params[:end_date]
-    city = ((@@params[:city] == "") ? "" : "&& (lbce.name = '#{@@params[:city]}')")
-    limit = "LIMIT #{@@params[:res_num]}"
-
-    @@sql = "
+    city = ((@@params[:city] == "") ? "" : "&& lbce.name = '#{@@params[:city]}'")
+    group_statement = "GROUP BY z.name"
+    sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as x, #{y} as y, #{count} as count
       FROM 
         #{table_name}
       #{join_statements}
       WHERE 
-        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
-      GROUP BY
-        #{group_by}
-      ORDER BY 
-        y DESC
-      #{limit}
+        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') && (aasm_state <> 'never_purchased' ) #{city}
+      #{group_statement}
     "
-    return @@sql
   end
 end

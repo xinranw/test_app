@@ -119,4 +119,78 @@ class BookingQuery < Query
     "
     return @@sql
   end
+
+  def get_heatmap_query
+    x = "gc.latitude"
+    y = "gc.longitude"
+    count = "count(z.name)"
+    table_name = "clients c"
+    join_statements = "
+      JOIN bookings b
+        ON b.client_id = c.id
+      JOIN addresses a
+        ON c.address_id = a.id
+      JOIN zones z 
+        ON z.id = a.zone_id
+      JOIN addresses z_a 
+        ON z_a.id = z.address_id
+      JOIN geocodings g
+        ON z.id = g.geocodable_id
+        AND g.geocodable_type = 'Zone'
+      JOIN geocodes gc
+        ON g.geocode_id = gc.id
+      JOIN lb_city_enums lbce
+        ON lbce.id = c.lb_city_enum_id
+    "
+    created_at = "b.created_at"
+    start_date = @@params[:start_date]
+    end_date = @@params[:end_date]
+    city = ((@@params[:city] == "") ? "" : "&& lbce.name = '#{@@params[:city]}'")
+    group_statement = "GROUP BY z.name"
+    sql = "
+      SELECT 
+        #{x} as x, #{y} as y, #{count} as count
+      FROM 
+        #{table_name}
+      #{join_statements}
+      WHERE 
+        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
+      #{group_statement}
+    "
+  end
+
+  ##### Get client addresses
+  # def get_heatmap_query
+  #   x = "gc.latitude"
+  #   y = "gc.longitude"
+  #   table_name = "clients c"
+  #   join_statements = "
+  #     JOIN bookings b
+  #       ON b.client_id = c.id
+  #     JOIN addresses a
+  #       ON c.address_id = a.id
+  #     JOIN geocodings g
+  #       ON a.id = g.geocodable_id
+  #       AND g.geocodable_type = 'Address'
+  #     JOIN geocodes gc
+  #       ON g.geocode_id = gc.id
+  #     JOIN lb_city_enums lbce
+  #       ON lbce.id = c.lb_city_enum_id
+  #   "
+  #   created_at = "b.created_at"
+  #   start_date = @@params[:start_date]
+  #   end_date = @@params[:end_date]
+  #   city = ((@@params[:city] == "") ? "" : "&& lbce.name = '#{@@params[:city]}'")
+
+  #   sql = "
+  #     SELECT 
+  #       #{x} as x, #{y} as y
+  #     FROM 
+  #       #{table_name}
+  #     #{join_statements}
+  #     WHERE 
+  #       (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
+  #   "
+  # end
+
 end
