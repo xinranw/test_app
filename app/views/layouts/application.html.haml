@@ -1,13 +1,12 @@
 !!!
 %html
-	%head
-		%script{:type => "text/javascript", :src => "https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"}
-		%javascript{:src => "https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"}
+  %head
+    %script{:type => "text/javascript", :src => "https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"}
 
-	%title TestApp
-	= stylesheet_link_tag :application, :media => "all"
-	= javascript_include_tag :application
-	= csrf_meta_tags
+  %title TestApp
+  = stylesheet_link_tag :application, :media => "all"
+  = javascript_include_tag :application
+  = csrf_meta_tags
 
-	%body
-	= yield
+  %body
+  = yield

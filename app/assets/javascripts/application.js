@@ -77,7 +77,6 @@ function format_data(data, ser_value, time_format, comp, sort, cats_num){
       data = data_sub;
     };
   }
-  
   return data;
 };
 
@@ -96,12 +95,11 @@ function graph_data(data, ser_value){
 
 /* To graph data */
 function add_graph(data, ser_value, ser_type, city, sort, elem){
-  debugger;
   var newyork, la, sf, miami, atlanta, austin, chicago, dallas, denver, houston, vegas, philadelphia, phoenix, portland, seattle, dc, sd;
   var cities = {
     "": {name: "", coords: new google.maps.LatLng(40.742037, -73.987563)},
     "newyork": {name: "newyork", coords: new google.maps.LatLng(40.742037, -73.987563)},
-    "la": {name: "la", coords: new google.maps.LatLng(34.052234, -118.243685)},
+    "la": {name: "la", coords: new google.maps.LatLng(34.092809,-118.328661)},
     "sf": {name: "sf", coords: new google.maps.LatLng(37.77493,-122.419415)},
     "miami": {name: "miami", coords: new google.maps.LatLng()},
     "atlanta": {name: "atlanta", coords: new google.maps.LatLng()},
@@ -122,7 +120,7 @@ function add_graph(data, ser_value, ser_type, city, sort, elem){
   if (ser_value == "heatmap"){
     var map, pointarray, heatmap;
     var map_data = [];
-
+    google.maps.visualRefresh = true;
     for (var i = 0; i < data.length; i++){
       for (var j = 0; j < data[i].length; j++){
         map_data[j] = 
@@ -130,10 +128,55 @@ function add_graph(data, ser_value, ser_type, city, sort, elem){
           {location: new google.maps.LatLng(data[i][j].x, data[i][j].y), weight: data[i][j].count};
       };
     };
+      
+    function getNewRadius(zoom, max_count, city){
+      switch (city) {
+        case "newyork":
+        case "":
+          if (zoom < 12)
+            return 7 - max_count / 150;
+          else if (zoom == 12)
+            return 10 - max_count / 150;
+          else if (zoom == 13)
+            return 20 - max_count / 60;
+          else if (zoom == 14)
+            return 30;
+          else 
+            return 40;
+        case "la":
+          if (zoom < 11)
+            return 20;
+          else if (zoom == 11)
+            return max_count * (-0.045) + 32;
+          else if (zoom == 12)
+            return max_count * (-0.095) + 49;
+          else if (zoom == 13)
+            return max_count * (-0.09) + 59;
+          else if (zoom == 14)
+            return max_count * (-0.045) + 62;
+          else 
+            return 75;
+      }
+    }
 
+    function getNewMaxIntensity(zoom, max_count, city){
+      if (zoom < 11)
+        return max_count * 2.5;
+      else if (zoom == 11)
+        return -34.2925 + max_count * 1.93;
+      else if (zoom == 12)
+        return -58.74 + max_count * 1.86;
+      else if (zoom == 13)
+        return -47.23 + max_count * 1.43;
+      else if (zoom == 14)
+        return -44.02 + max_count * 1.23 ;
+      else 
+        return Math.max(5, max_count * 2 - 45);
+    }
+    
     function initialize() {
       var mapOptions = {
-        zoom: 12,
+        zoom: 13,
         center: cities[city].coords,
       };
 
@@ -145,14 +188,39 @@ function add_graph(data, ser_value, ser_type, city, sort, elem){
       heatmap = new google.maps.visualization.HeatmapLayer({
         data: pointArray,
         dissipating: true,
-        radius: 50,
-        opacity: 0.8,
+        radius: Math.round(getNewRadius(map.getZoom(), map_data[0].weight, city)),
+        opacity: 0.6,
+        maxIntensity: Math.round(getNewMaxIntensity(map.getZoom(), map_data[0].weight, city)),
+        gradient: [
+          'rgba(0, 255, 255, 0)',
+          'rgba(0, 255, 255, 1)',
+          'rgba(0, 191, 255, 1)',
+          'rgba(0, 127, 255, 1)',
+          'rgba(0, 63, 255, 1)',
+          'rgba(0, 0, 255, 1)',
+          'rgba(0, 0, 223, 1)',
+          'rgba(0, 0, 191, 1)',
+          'rgba(0, 0, 159, 1)',
+          'rgba(0, 0, 127, 1)',
+          'rgba(63, 0, 91, 1)',
+          'rgba(127, 0, 63, 1)',
+          'rgba(191, 0, 31, 1)',
+          'rgba(255, 0, 0, 1)'
+        ]
       });
 
       heatmap.setMap(map); 
+
+      google.maps.event.addListener(map, 'zoom_changed', function () {
+        heatmap.setOptions({
+          radius: Math.round(getNewRadius(map.getZoom(), map_data[0].weight, city)),
+          maxIntensity: Math.round(getNewMaxIntensity(map.getZoom(), map_data[0].weight, city)),
+        });
+      });
     }
 
     initialize();
+
   } else {
     var width = nv.utils.windowSize().width - 40,
     height = nv.utils.windowSize().height - 40;

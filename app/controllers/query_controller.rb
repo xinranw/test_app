@@ -7,7 +7,7 @@ class QueryController < ApplicationController
       params_2[:city] = params[:city2]
       params_2[:start_date] = params[:start_date2]
       params_2[:end_date] = params[:end_date2]
-      query_2 = Query.get(params[:ser_type], params_2)
+      query_2 = Query.get(params[:ser_value], params[:ser_type], params_2)
     end
 
     if params[:ser_value] == "heatmap"

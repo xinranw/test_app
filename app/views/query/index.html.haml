@@ -149,9 +149,8 @@
     };
   });
 
-  var ajax_data;
+  var ajax_data = [];
   $("#submit").click(function(){
-    ajax_graph_data = [];
 
     var ajax_options = {
       type: "GET",
@@ -174,7 +173,10 @@
       dataType: "json",
       success: function(data){
         ajax_data = data;
-        var f_data = format_data(data, $("#ser_value").val(), $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
+        // Parse JSON
+        var f_data = format_data(ajax_data, $("#ser_value").val(), $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
+
+        // Show/hide appropriate graph
         if ($("#ser_value").val() == "heatmap"){
           $("#chart1").addClass("hidden");
           $("#map-canvas").removeClass("hidden");
@@ -182,7 +184,8 @@
           $("#chart1").removeClass("hidden");
           $("#map-canvas").addClass("hidden");
         };
-
+        
+        // Format data for graphing. Graph data
         add_graph(graph_data(f_data, $("#ser_value").val()), $("#ser_value").val(), $("#ser_type").val(), $("#city").val(), $("#sort").val(), "#map-canvas");
         
       },
