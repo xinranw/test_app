@@ -26,7 +26,6 @@ class QueryController < ApplicationController
           end
       end
     end
-
     # if request.xhr?
     #   render :json => @results
     # else

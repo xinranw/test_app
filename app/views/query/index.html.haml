@@ -1,3 +1,21 @@
+%ul
+  %li
+    %a{:href => "query_display1_path"}Display 1 - Revenue in last 24 hours
+  %li
+    %a{:href => "query_display2_path"}Display 2 - Revenue in last week
+  %li
+    %a{:href => "query_display3_path"}Display 3 - Sales in last 24 hours
+  %li
+    %a{:href => "query_display4_path"}Display 4 - Sales in last week
+  %li
+    %a{:href => "query_display5_path"}Display 5 - Signups in last week
+  %li
+    %a{:href => "query_display6_path"}Display 6 - Revenues by city
+  %li
+    %a{:href => "query_display7_path"}Display 7 - Map of Bookings in NYC 
+  %li
+    %a{:href => "query_display8_path"}Display 8 - Map of Loots in NYC 
+
 %form
   %select{:id => "ser_value"}
     %option{:id => "num", :value => "num"} Number Of
@@ -146,53 +164,75 @@
       $(".heatmap-hidden").addClass("hidden");
     } else {
       $(".heatmap-hidden").removeClass("hidden");
+      if (!$("#comp").is(':checked'))
+        $("#range2").addClass("hidden");
     };
   });
 
-  var ajax_data = [];
+  var params = {};
   $("#submit").click(function(){
-
-    var ajax_options = {
-      type: "GET",
-      url: '#{query_fetch_path}',
-      data: {
-        ser_type: $("#ser_type").val(),
-        ser_value: $("#ser_value").val(),
-        city: $("#city").val(),
-        time_format: $("#time_format").val(),
-        sort: $("#sort").val(),
-        res_num: $("#cats_num").val(),
-        comp: $("#comp").is(':checked'),
-        start_date: $("#start_date").val(),
-        end_date: $("#end_date").val(),
-        ser_type2: $("#ser_type2").val(),
-        city2: $("#city2").val(),
-        start_date2: $("#start_date2").val(),
-        end_date2: $("#end_date2").val(),
-      },
-      dataType: "json",
-      success: function(data){
-        ajax_data = data;
-        // Parse JSON
-        var f_data = format_data(ajax_data, $("#ser_value").val(), $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
-
-        // Show/hide appropriate graph
-        if ($("#ser_value").val() == "heatmap"){
-          $("#chart1").addClass("hidden");
-          $("#map-canvas").removeClass("hidden");
-        } else {
-          $("#chart1").removeClass("hidden");
-          $("#map-canvas").addClass("hidden");
-        };
-        
-        // Format data for graphing. Graph data
-        add_graph(graph_data(f_data, $("#ser_value").val()), $("#ser_value").val(), $("#ser_type").val(), $("#city").val(), $("#sort").val(), "#map-canvas");
-        
-      },
-      error: function(){
-        console.log("error");
-      }
-    };
-    $.ajax(ajax_options);
+    params = {
+      "url":          '#{query_fetch_path}',
+      "ser_type":     $("#ser_type").val(),
+      "ser_value":    $("#ser_value").val(),
+      "city":         $("#city").val(),
+      "time_format":  $("#time_format").val(),
+      "sort":         $("#sort").val(),
+      "res_num":      $("#cats_num").val(),
+      "comp":         $("#comp").is(':checked'),
+      "start_date":   $("#start_date").val(),
+      "end_date":     $("#end_date").val(),
+      "ser_type2":    $("#ser_type2").val(),
+      "city2":        $("#city2").val(),
+      "start_date2":  $("#start_date2").val(),
+      "end_date2":    $("#end_date2").val(),
+      "chart_name":   '#chart1',
+      "map_name":     '#map-canvas',
+    }
+    call_ajax(params);
   });
+
+  //   var ajax_options = {
+  //     type: "GET",
+  //     url: '#{query_fetch_path}',
+  //     data: {
+  //       ser_type: $("#ser_type").val(),
+  //       ser_value: $("#ser_value").val(),
+  //       city: $("#city").val(),
+  //       time_format: $("#time_format").val(),
+  //       sort: $("#sort").val(),
+  //       res_num: $("#cats_num").val(),
+  //       comp: $("#comp").is(':checked'),
+  //       start_date: $("#start_date").val(),
+  //       end_date: $("#end_date").val(),
+  //       ser_type2: $("#ser_type2").val(),
+  //       city2: $("#city2").val(),
+  //       start_date2: $("#start_date2").val(),
+  //       end_date2: $("#end_date2").val(),
+  //     },
+  //     dataType: "json",
+  //     success: function(data){
+  //       ajax_data = data;
+  //       // Parse JSON
+  //       var f_data = format_data(ajax_data, $("#ser_value").val(), $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
+
+  //       // Show/hide appropriate graph
+  //       if ($("#ser_value").val() == "heatmap"){
+  //         $("#chart1").addClass("hidden");
+  //         $("#map-canvas").removeClass("hidden");
+  //       } else {
+  //         $("#chart1").removeClass("hidden");
+  //         $("#map-canvas").addClass("hidden");
+  //       };
+
+  //       // Format data for graphing. Graph data
+  //       add_graph(graph_data(f_data, $("#ser_value").val()), $("#ser_value").val(), $("#ser_type").val(), $("#city").val(), $("#sort").val(), "#map-canvas");
+        
+  //     },
+  //     error: function(){
+  //       console.log("error");
+  //     }
+  //   };
+  //   $.ajax(ajax_options);
+  // });
 

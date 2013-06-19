@@ -3,7 +3,7 @@ class BookingQuery < Query
   @@sql = ""
 
   def initialize(params)
-    if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("ser_value") && params.has_key?("start_date") && params.has_key?("end_date"))
+    if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("start_date") && params.has_key?("end_date"))
       @@params = params
     else 
       raise ArgumentError.new "missing parameters"
@@ -15,8 +15,8 @@ class BookingQuery < Query
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        x = "TIME(FROM_UNIXTIME((UNIX_TIMESTAMP(ii.created_at) DIV 3600) * 3600 ))"
-        group_by = "hour(ii.created_at)"
+        x = "TIME(CONVERT_TZ(FROM_UNIXTIME((UNIX_TIMESTAMP(ii.created_at) DIV 3600) * 3600 ),'UTC', 'US/Eastern'))"
+        group_by = "x"
       when "day"
         x = "date(ii.created_at)"
         group_by = "date(ii.created_at)"
@@ -30,7 +30,7 @@ class BookingQuery < Query
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price)/1000, 2)"
+        y = "round(sum(ii.price), 0)"
       when "num"
         y = "count(ii.price)"
     end
@@ -59,6 +59,7 @@ class BookingQuery < Query
         (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{service_type} #{city}
       GROUP BY
         #{group_by}
+      ORDER BY x
     "
     return @@sql
   end

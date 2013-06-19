@@ -31,7 +31,7 @@ class LootQuery < Query
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 2)"
+        y = "round(sum(ii.price * ii.commission_rate / 100), 0)"
       when "num"
         y = "count(ii.price)"
     end

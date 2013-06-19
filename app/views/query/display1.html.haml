@@ -1,0 +1,28 @@
+%div{:id => "chart1"}
+  %svg{:style => "height: 500px;"}
+
+:javascript
+  var d = new Date(Date.now());
+  var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var tmrw = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + (d.getDate() + 1);
+  var params = {
+    "url":          '#{query_fetch_path}',
+    "ser_type":     "bookings",
+    "ser_value":    "rev",
+    "city":         "",
+    "time_format":  "hour",
+    "sort":         "by_time",
+    "res_num":      "5",
+    "comp":         true,
+    "start_date":   today,
+    "end_date":     tmrw,
+    "ser_type2":    "loots",
+    "city2":        "",
+    "start_date2":  today,
+    "end_date2":    tmrw,
+    "chart_name":   '#chart1',
+    "map_name":     '#map-canvas',
+  }
+  $(document).ready(function(){
+    call_ajax(params);
+  });
