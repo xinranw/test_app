@@ -1,0 +1,29 @@
+%div{:id => "map-canvas", :class => "grid-container"}
+  %div{:id => "map-1", :class => "grid-50"}
+  %div{:id => "map-2", :class => "grid-50"}
+
+:javascript
+  var d = new Date(Date.now());
+  var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var this_year = d.getFullYear() + "/01/01";
+  var params = {
+    "url":          '#{query_fetch_path}',
+    "ser_type1":    "bookings",
+    "ser_value":    "heatmap",
+    "city1":         "",
+    "time_format":  "hour",
+    "sort":         "by_time",
+    "res_num":      "5",
+    "comp":         true,
+    "start_date1":  this_year,
+    "end_date1":    today,
+    "ser_type2":    "bookings",
+    "city2":        "",
+    "start_date2":  this_year,
+    "end_date2":    today,
+    "chart_name":   '#chart1',
+    "map_name":     ['#map-1','#map-2']
+  }
+  $(document).ready(function(){
+    call_ajax(params);
+  });

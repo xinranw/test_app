@@ -1,28 +1,33 @@
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
 
+
 :javascript
   var d = new Date(Date.now());
+  var two_years_ago = (d.getFullYear() - 2) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var last_year = (d.getFullYear() - 1) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
   var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
   var tmrw = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + (d.getDate() + 1);
-  var params = {
+  var params1 = {
     "url":          '#{query_fetch_path}',
     "ser_type1":    "bookings",
     "ser_value":    "rev",
     "city1":         "",
-    "time_format":  "hour",
-    "sort":         "by_time",
-    "res_num":      "5",
+    "time_format":  "month",
+    "sort":         "by_time_cum",
+    "res_num":      "10",
     "comp":         true,
-    "start_date1":   today,
-    "end_date1":     tmrw,
-    "ser_type2":    "loots",
+    "start_date1":  last_year,
+    "end_date1":    tmrw,
+    "ser_type2":    "bookings",
     "city2":        "",
-    "start_date2":  today,
-    "end_date2":    tmrw,
+    "start_date2":  two_years_ago,
+    "end_date2":    last_year,
     "chart_name":   '#chart1',
     "map_name":     '#map-canvas',
-  }
+    "table_name":   '#table',
+    "view":         "graph"
+  };
   $(document).ready(function(){
-    call_ajax(params);
+    call_ajax(params1);
   });

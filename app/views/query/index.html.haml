@@ -4,9 +4,9 @@
   %li
     %a{:href => "query_display2_path"}Display 2 - Revenue in last week
   %li
-    %a{:href => "query_display3_path"}Display 3 - Sales in last 24 hours
+    %a{:href => "query_display3_path"}Display 3 - Number of Sales in last 24 hours
   %li
-    %a{:href => "query_display4_path"}Display 4 - Sales in last week
+    %a{:href => "query_display4_path"}Display 4 - Number of Sales in last week
   %li
     %a{:href => "query_display5_path"}Display 5 - Signups in last week
   %li
@@ -15,17 +15,21 @@
     %a{:href => "query_display7_path"}Display 7 - Map of Bookings in NYC 
   %li
     %a{:href => "query_display8_path"}Display 8 - Map of Loots in NYC 
+  %li
+    %a{:href => "query_display9_path"}Display 9 - Top 10 Loots 
+  %li
+    %a{:href => "query_display10_path"}Display 10 - Cumulative Test 
 
 %form
   %select{:id => "ser_value"}
     %option{:id => "num", :value => "num"} Number Of
     %option{:id => "rev", :value => "rev"} Revenue
     %option{:id => "heatmap", :value => "heatmap"} Heatmap
-  %select{:id => "ser_type"}
+  %select{:id => "ser_type1"}
     %option{:value => "bookings"} Bookings
     %option{:value => "loots"} Loots
     %option{:value => "signups"} Signups
-  %select{:id => "city"}
+  %select{:id => "city1"}
     %option{:value => ""} All Cities
     %option{:value => "newyork"} New York
     %option{:value => "la"} LA
@@ -45,13 +49,15 @@
     %option{:value => "dc"} Washington DC
     %option{:value => "sd"} San Diego
   Start date:
-  %input{:type => "text", :class => "datepicker", :id => "start_date"}
+  %input{:type => "text", :class => "datepicker", :id => "start_date1"}
   End date:
-  %input{:type => "text", :class => "datepicker", :id => "end_date"} 
+  %input{:type => "text", :class => "datepicker", :id => "end_date1"} 
   %span{:class => "heatmap-hidden"}
     %select{:id => "sort"}
       %option{:value => "by_time"} By Time
+      %option{:value => "by_time_cum"} By Time (Cumulative)
       %option{:value => "by_cats"} By Service Category
+      %option{:value => "by_prov"} By Providers
       %option{:value => "by_location"} By Location
     %select{:id => "time_format"}
       %option{:value => "year"} Year
@@ -90,6 +96,10 @@
   %input{:type => "text", :class => "datepicker", :id => "start_date2"}
   End date:
   %input{:type => "text", :class => "datepicker", :id => "end_date2"}
+%form
+  %select{:id => "view"}
+    %option{:value => "graph"} Graph
+    %option{:value => "table"} Table
 
 %form
   %span{:class => "heatmap-hidden"}
@@ -99,14 +109,19 @@
 / Export to CSV button
 / %button{:id => "export_data", :path => "#{query_fetch_path}.csv"}Export to CSV
 
+
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
-%div{:id => "map-canvas"}
+%div{:id => "map-canvas", :class => "grid-container"}
+  %div{:id => "map-1", :class => "grid-50"}
+  %div{:id => "map-2", :class => "grid-50"}
+%div{:id => "table_div", :class => "data-table"}
+  %table{:id => "table"}
 
 :javascript
   var d = new Date(Date.now());
   d = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
-  $( "#end_date" ).val(d);
+  $( "#end_date1" ).val(d);
   $( "#end_date2" ).val(d);
 
   $(function() {
@@ -128,7 +143,7 @@
   // Hide number of results selector for time-based data. Show for categorical data.
   $("#cats_num").addClass("hidden");
   function sort_change(sort){
-    if( $(sort).val() == "by_cats" || $(sort).val() == "by_location") {
+    if( $(sort).val() == "by_cats" || $(sort).val() == "by_prov" || $(sort).val() == "by_location") {
         $("#cats_num").removeClass("hidden");
         $("#time_format").addClass("hidden");
     } else {
@@ -151,8 +166,8 @@
       sort_change("#sort");
     };
   };
-  $("#ser_type").change(function(){
-    ser_type_change("#ser_type")
+  $("#ser_type1").change(function(){
+    ser_type_change("#ser_type1")
   });
   $("#ser_type2").change(function(){
     ser_type_change("#ser_type2")
@@ -173,66 +188,47 @@
   $("#submit").click(function(){
     params = {
       "url":          '#{query_fetch_path}',
-      "ser_type":     $("#ser_type").val(),
+      "ser_type1":    $("#ser_type1").val(),
       "ser_value":    $("#ser_value").val(),
-      "city":         $("#city").val(),
+      "city1":        $("#city1").val(),
       "time_format":  $("#time_format").val(),
       "sort":         $("#sort").val(),
       "res_num":      $("#cats_num").val(),
       "comp":         $("#comp").is(':checked'),
-      "start_date":   $("#start_date").val(),
-      "end_date":     $("#end_date").val(),
+      "start_date1":  $("#start_date1").val(),
+      "end_date1":    $("#end_date1").val(),
       "ser_type2":    $("#ser_type2").val(),
       "city2":        $("#city2").val(),
       "start_date2":  $("#start_date2").val(),
       "end_date2":    $("#end_date2").val(),
       "chart_name":   '#chart1',
-      "map_name":     '#map-canvas',
-    }
+      "map_name":     ['#map-1','#map-2'],
+      "table_name":   '#table',
+      "view":         $("#view").val()
+    };
+
+    // Show/hide appropriate graph
+    if (params.ser_value == "heatmap"){
+      $(params.chart_name).addClass("hidden");
+      $(params.map_name[0]).removeClass("hidden");
+      $(params.map_name[1]).removeClass("hidden");
+    } else {
+      $(params.chart_name).removeClass("hidden");
+      $(params.map_name[0]).addClass("hidden");
+      $(params.map_name[1]).addClass("hidden");
+    };
+
+    // Table hiding
+
+    if (params.view == "table"){
+      $("#chart1").addClass("hidden");
+      $("#map-canvas").addClass("hidden");
+      $("#table").removeClass("hidden");
+    } else {
+      $("#chart1").removeClass("hidden");
+      $("#map-canvas").removeClass("hidden");
+      $("#table").addClass("hidden");
+    };
+
     call_ajax(params);
   });
-
-  //   var ajax_options = {
-  //     type: "GET",
-  //     url: '#{query_fetch_path}',
-  //     data: {
-  //       ser_type: $("#ser_type").val(),
-  //       ser_value: $("#ser_value").val(),
-  //       city: $("#city").val(),
-  //       time_format: $("#time_format").val(),
-  //       sort: $("#sort").val(),
-  //       res_num: $("#cats_num").val(),
-  //       comp: $("#comp").is(':checked'),
-  //       start_date: $("#start_date").val(),
-  //       end_date: $("#end_date").val(),
-  //       ser_type2: $("#ser_type2").val(),
-  //       city2: $("#city2").val(),
-  //       start_date2: $("#start_date2").val(),
-  //       end_date2: $("#end_date2").val(),
-  //     },
-  //     dataType: "json",
-  //     success: function(data){
-  //       ajax_data = data;
-  //       // Parse JSON
-  //       var f_data = format_data(ajax_data, $("#ser_value").val(), $("#time_format").val(), $("#comp").is(':checked'), $("#sort").val(), $("#cats_num").val());
-
-  //       // Show/hide appropriate graph
-  //       if ($("#ser_value").val() == "heatmap"){
-  //         $("#chart1").addClass("hidden");
-  //         $("#map-canvas").removeClass("hidden");
-  //       } else {
-  //         $("#chart1").removeClass("hidden");
-  //         $("#map-canvas").addClass("hidden");
-  //       };
-
-  //       // Format data for graphing. Graph data
-  //       add_graph(graph_data(f_data, $("#ser_value").val()), $("#ser_value").val(), $("#ser_type").val(), $("#city").val(), $("#sort").val(), "#map-canvas");
-        
-  //     },
-  //     error: function(){
-  //       console.log("error");
-  //     }
-  //   };
-  //   $.ajax(ajax_options);
-  // });
-

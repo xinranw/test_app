@@ -14,5 +14,7 @@ TestApp::Application.routes.draw do
   match "query_display6_path" => "query#display6"
   match "query_display7_path" => "query#display7"
   match "query_display8_path" => "query#display8"
+  match "query_display9_path" => "query#display9"
+  match "query_display10_path" => "query#display10"
 
 end

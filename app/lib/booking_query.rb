@@ -3,7 +3,7 @@ class BookingQuery < Query
   @@sql = ""
 
   def initialize(params)
-    if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("start_date") && params.has_key?("end_date"))
+    if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
     else 
       raise ArgumentError.new "missing parameters"
@@ -11,30 +11,30 @@ class BookingQuery < Query
   end
 
   protected
-
+  # Builds a sql query from @@params to obtain time-based data
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        x = "TIME(CONVERT_TZ(FROM_UNIXTIME((UNIX_TIMESTAMP(ii.created_at) DIV 3600) * 3600 ),'UTC', 'US/Eastern'))"
-        group_by = "x"
+        group_by = "hour(x)"
+        order_by = "hour(x)"
       when "day"
-        x = "date(ii.created_at)"
         group_by = "date(ii.created_at)"
+        order_by = "date(ii.created_at)"
       when "month"
-        x = "CONCAT(year(ii.created_at), '-', monthname(ii.created_at))"
         group_by = "year(ii.created_at), month(ii.created_at)"
+        order_by = "ii.created_at"
       when "year"
-        x = "year(ii.created_at)"
         group_by = "year(ii.created_at)"
+        order_by = "year(ii.created_at)"
     end
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price), 0)"
+        y = "round(sum(ii.price) / 1000, 0)"
       when "num"
         y = "count(ii.price)"
     end
-
+    x = "ii.created_at"
     service_type = "&& type = 'BookingInvoiceItem'"
     join_statements = "
     JOIN bookings as b ON ii.item_id = b.id 
@@ -59,11 +59,12 @@ class BookingQuery < Query
         (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{service_type} #{city}
       GROUP BY
         #{group_by}
-      ORDER BY x
+      ORDER BY 
+        #{order_by}
     "
     return @@sql
   end
-
+  # Builds a sql query from @@params to obtain category data
   def get_category_query
     join_statements = "
       JOIN lb_city_enums as lbce
@@ -80,6 +81,9 @@ class BookingQuery < Query
         join_statements += "
           JOIN service_categories as sc
             ON sps.service_category_id = sc.id"
+      when "by_prov"
+        x = "sp.name"
+        group_by = "sp.name"
       when "by_location"
         x = "z.name"
         group_by = "z.name"
@@ -93,6 +97,8 @@ class BookingQuery < Query
       when "num"
         if @@params[:sort] == "by_cats"
           y = "count(sc.display_name)"
+        elsif @@params[:sort] == "by_prov"
+          y = "count(sp.name)"
         else @@params[:sort] == "by_location"
           y = "count(z.name)"
         end
@@ -121,28 +127,48 @@ class BookingQuery < Query
     return @@sql
   end
 
-  ##### Get client addresses
+  # Builds a sql query from @@params to obtain heatmap data based on client or provider addresses
   def get_heatmap_query
     x = "gc.latitude"
     y = "gc.longitude"
     count = "count(a.id)"
-    table_name = "clients c"
-    join_statements = "
-      JOIN bookings b
-        ON b.client_id = c.id
-      JOIN addresses a
-        ON c.address_id = a.id
-      JOIN geocodings g
-        ON a.id = g.geocodable_id
-        AND g.geocodable_type = 'Address'
-      JOIN geocodes gc
-        ON g.geocode_id = gc.id
-      JOIN lb_city_enums lbce
-        ON lbce.id = c.lb_city_enum_id
-    "
-    created_at = "b.created_at"
+    if @@params[:heatmap_source] == "clients"
+      table_name = "clients c"
+      join_statements = "
+        JOIN bookings b
+          ON b.client_id = c.id
+        JOIN addresses a
+          ON c.address_id = a.id
+        JOIN geocodings g
+          ON a.id = g.geocodable_id
+          AND g.geocodable_type = 'Address'
+        JOIN geocodes gc
+          ON g.geocode_id = gc.id
+        JOIN lb_city_enums lbce
+          ON lbce.id = c.lb_city_enum_id
+      "
+      created_at = "b.created_at"
+    else @@params[:heatmap_source] == "providers"
+      table_name = "service_providers sp"
+      join_statements = "
+        JOIN service_provider_services sps
+          ON sps.service_provider_id = sp.id
+        JOIN bookings b
+          ON b.service_provider_service_id = sps.id
+        JOIN addresses a 
+          ON a.id = sp.company_address_id
+        JOIN geocodings g
+          ON a.id = g.geocodable_id
+          AND g.geocodable_type = 'Address'
+        JOIN geocodes gc
+          ON g.geocode_id = gc.id
+        JOIN lb_city_enums lbce
+          ON lbce.id = sp.lb_city_enum_id
+      "
+    end
     start_date = @@params[:start_date]
     end_date = @@params[:end_date]
+    created_at = "b.created_at"
     city = ((@@params[:city] == "") ? "" : "&& lbce.name = '#{@@params[:city]}'")
     group_statement = "GROUP BY a.id"
 

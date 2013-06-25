@@ -4,7 +4,7 @@ class LootQuery < Query
   @@sql = ""
 
   def initialize(params)
-    if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("ser_value") && params.has_key?("start_date") && params.has_key?("end_date"))
+    if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:ser_value) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
     else 
       raise ArgumentError.new "missing parameters"
@@ -12,30 +12,31 @@ class LootQuery < Query
   end
 
   protected
-
+  # Builds a sql query from @@params to obtain time-based data
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        x = "TIME(FROM_UNIXTIME((UNIX_TIMESTAMP(ii.created_at) DIV 3600) * 3600 ))"
-        group_by = "hour(ii.created_at)"
+        group_by = "hour(x)"
+        order_by = "hour(x)"
       when "day"
-        x = "date(ii.created_at)"
         group_by = "date(ii.created_at)"
+        order_by = "date(ii.created_at)"
       when "month"
-        x = "CONCAT(year(ii.created_at), '-', monthname(ii.created_at))"
         group_by = "year(ii.created_at), month(ii.created_at)"
+        order_by = "ii.created_at"
       when "year"
-        x = "year(ii.created_at)"
         group_by = "year(ii.created_at)"
+        order_by = "year(ii.created_at)"
     end
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price * ii.commission_rate / 100), 0)"
+        y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0)"
       when "num"
         y = "count(ii.price)"
     end
-
+    
+    x = "ii.created_at"
     service_type = "&& (ii.type = 'LootServiceInvoiceItem')"
     join_statements = "
       LEFT JOIN loot_services ls ON ls.id = ii.item_id
@@ -62,7 +63,7 @@ class LootQuery < Query
     "
     return @@sql
   end
-
+  # Builds a sql query from @@params to obtain category data
   def get_category_query
     join_statements = "
       JOIN lb_city_enums as lbce
@@ -82,6 +83,9 @@ class LootQuery < Query
         join_statements += "
           JOIN service_categories as sc
             ON ls.service_category_id = sc.id"
+      when "by_prov"
+        x = "ls.name"
+        group_by = "ls.name"
       when "by_location"
         x = "z.name"
         group_by = "z.name"
@@ -91,12 +95,22 @@ class LootQuery < Query
     end
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0)"
+        if @@params[:sort] == "by_prov"
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as y,
+               sp.name as PROVIDER,
+               count(sp.name) as SOLD"
+        else 
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as y"
+        end
       when "num"
         if @@params[:sort] == "by_cats"
-          y = "count(sc.display_name)"
-        else @@params[:sort] == "by_location"
-          y = "count(z.name)"
+          y = "count(sc.display_name) as y"
+        elsif @@params[:sort] == "by_prov"
+          y = "count(ls.name) as y,
+               sp.name as PROVIDER,
+               round(sum(ii.price * ii.commission_rate / 100), 0) as PROFIT"
+        elsif@@params[:sort] == "by_location"
+          y = "count(z.name) as y"
         end
     end
 
@@ -110,7 +124,7 @@ class LootQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as x, #{y}
       FROM 
         #{table_name}
       #{join_statements}
@@ -125,7 +139,7 @@ class LootQuery < Query
     return @@sql
   end
 
-  ##### Get client addresses
+  # Builds a sql query from @@params to obtain heatmap data based on client or provider addresses
   def get_heatmap_query
     x = "gc.latitude"
     y = "gc.longitude"

@@ -1,0 +1,55 @@
+%div{:id => "chart1"}
+  %svg{:style => "height: 500px;"}
+%div{:id => "table_div", :class => "data-table"}
+  %table{:id => "table1"}
+
+:javascript
+  var d = new Date(Date.now());
+  var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var tmrw = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + (d.getDate() + 1);
+  var params1 = {
+    "url":          '#{query_fetch_path}',
+    "ser_type1":    "loots",
+    "ser_value":    "rev",
+    "city1":         "",
+    "time_format":  "month",
+    "sort":         "by_prov",
+    "res_num":      "10",
+    "comp":         false,
+    "start_date1":  "2013/01/01",
+    "end_date1":    tmrw,
+    "ser_type2":    "loots",
+    "city2":        "",
+    "start_date2":  today,
+    "end_date2":    tmrw,
+    "chart_name":   '#chart1',
+    "map_name":     '#map-canvas',
+    "table_name":   '#table',
+    "view":         "graph"
+  };
+  var params2 = {
+    "url":          '#{query_fetch_path}',
+    "ser_type1":    "loots",
+    "ser_value":    "rev",
+    "city1":         "",
+    "time_format":  "month",
+    "sort":         "by_prov",
+    "res_num":      "10",
+    "comp":         false,
+    "start_date1":  "2013/01/01",
+    "end_date1":    tmrw,
+    "ser_type2":    "loots",
+    "city2":        "",
+    "start_date2":  today,
+    "end_date2":    tmrw,
+    "chart_name":   '#chart2',
+    "map_name":     '#map-canvas',
+    "table_name":   '#table1',
+    "view":         "table"
+  };
+  $(document).ready(function(){
+    call_ajax(params1);
+  });
+  $(document).ready(function(){
+    call_ajax(params2);
+  });

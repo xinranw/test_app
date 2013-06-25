@@ -2,6 +2,8 @@ class SignupQuery < Query
   @@params
   @@sql = ""
 
+  # Initializes an instance of SignupQuery class. Sets @@params to the parameters passed in
+  # @param params [hash] the parameters passed in from query_controller
   def initialize(params)
     if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("ser_value") && params.has_key?("start_date") && params.has_key?("end_date"))
       @@params = params
@@ -11,21 +13,21 @@ class SignupQuery < Query
   end
 
   protected
-
+  # Builds a sql query from @@params to obtain time-based data
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        x = "TIME(FROM_UNIXTIME((UNIX_TIMESTAMP(c.created_at) DIV 3600) * 3600 ))"
-        group_by = "hour(c.created_at)"
+        group_by = "hour(x)"
+        order_by = "hour(x)"
       when "day"
-        x = "date(c.created_at)"
-        group_by = "date(c.created_at)"
+        group_by = "date(ii.created_at)"
+        order_by = "date(ii.created_at)"
       when "month"
-        x = "CONCAT(year(c.created_at), '-', monthname(c.created_at))"
-        group_by = "year(c.created_at), month(c.created_at)"
+        group_by = "year(ii.created_at), month(ii.created_at)"
+        order_by = "ii.created_at"
       when "year"
-        x = "year(c.created_at)"
-        group_by = "year(c.created_at)"
+        group_by = "year(ii.created_at)"
+        order_by = "year(ii.created_at)"
     end
 
     case @@params[:ser_value]
@@ -37,7 +39,7 @@ class SignupQuery < Query
     JOIN lb_city_enums as lbce 
       ON lbce.id = c.lb_city_enum_id
     "
-
+    x = "ii.created_at"
     table_name = "clients as c"
     created_at = "c.created_at"
     start_date = @@params[:start_date]
@@ -57,11 +59,12 @@ class SignupQuery < Query
     "
     return @@sql
   end
-
+  
   def get_category_data
     raise StandardError.new"Signups cannot be categorical"
   end
 
+  # Builds a sql query from @@params to obtain heatmap data based on client or provider addresses
   def get_heatmap_query
     x = "gc.latitude"
     y = "gc.longitude"
