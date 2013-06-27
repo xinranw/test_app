@@ -15,8 +15,8 @@ class BookingQuery < Query
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        group_by = "hour(x)"
-        order_by = "hour(x)"
+        group_by = "hour(ii.created_at)"
+        order_by = "hour(ii.created_at)"
       when "day"
         group_by = "date(ii.created_at)"
         order_by = "date(ii.created_at)"
@@ -31,10 +31,14 @@ class BookingQuery < Query
     case @@params[:ser_value]
       when "rev"
         y = "round(sum(ii.price) / 1000, 0)"
+        as_y = "PROFIT"
       when "num"
         y = "count(ii.price)"
+        as_y = "NUMBER_OF"
     end
+
     x = "ii.created_at"
+    as_x = "#{@@params[:time_format]}".upcase
     service_type = "&& type = 'BookingInvoiceItem'"
     join_statements = "
     JOIN bookings as b ON ii.item_id = b.id 
@@ -51,7 +55,7 @@ class BookingQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as #{as_x}, #{y} as #{as_y}
       FROM 
         #{table_name}
       #{join_statements}
@@ -77,15 +81,18 @@ class BookingQuery < Query
     case @@params[:sort]
       when "by_cats"
         x = "sc.display_name"
+        as_x = "SERVICE_CATEGORIES"
         group_by = "sc.display_name"
         join_statements += "
           JOIN service_categories as sc
             ON sps.service_category_id = sc.id"
       when "by_prov"
         x = "sp.name"
+        as_x = "BOOKING"
         group_by = "sp.name"
       when "by_location"
         x = "z.name"
+        as_x = "ZONES"
         group_by = "z.name"
         join_statements +="
           JOIN zones as z
@@ -94,12 +101,14 @@ class BookingQuery < Query
     case @@params[:ser_value]
       when "rev"
         y = "round(sum(b.price) / 1000, 0)"
+        as_y = "PROFIT"
       when "num"
+        as_y = "NUMBER_OF"
         if @@params[:sort] == "by_cats"
           y = "count(sc.display_name)"
         elsif @@params[:sort] == "by_prov"
           y = "count(sp.name)"
-        else @@params[:sort] == "by_location"
+        elsif @@params[:sort] == "by_location"
           y = "count(z.name)"
         end
     end
@@ -112,7 +121,7 @@ class BookingQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as #{as_x}, #{y} as #{as_y}
       FROM 
         #{table_name}
       #{join_statements}
@@ -121,7 +130,7 @@ class BookingQuery < Query
       GROUP BY
         #{group_by}
       ORDER BY 
-        y DESC
+        #{as_y} DESC
       #{limit}
     "
     return @@sql
@@ -174,14 +183,14 @@ class BookingQuery < Query
 
     sql = "
       SELECT 
-        #{x} as x, #{y} as y, #{count} as count
+        #{x} as Latitude, #{y} as Longitude, #{count} as Count
       FROM 
         #{table_name}
       #{join_statements}
       WHERE 
         (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
       #{group_statement}
-      ORDER BY count DESC
+      ORDER BY Count DESC
     "
   end
   

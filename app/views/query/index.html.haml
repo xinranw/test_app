@@ -104,6 +104,9 @@
 %form
   %span{:class => "heatmap-hidden"}
     %input{:type => "checkbox", :id => "comp"}Comparison
+    %select{:id => "comp-type"}
+      %option{:value => "same"}Same Time Ranges
+      %option{:value => "diff"}Different Time Ranges
   %button{:type => "button", :checked => "true", :id => "submit"}Submit
 
 / Export to CSV button
@@ -132,11 +135,14 @@
 
   // Hides the second set of data option. Show if checkbox is checked.
   $("#range2").addClass("hidden");
+  $("#comp-type").addClass("hidden");
   $("#comp").click(function() {
     if( $(this).is(':checked')) {
         $("#range2").removeClass("hidden");
+        $("#comp-type").removeClass("hidden");
     } else {
         $("#range2").addClass("hidden");
+        $("#comp-type").addClass("hidden");
     };
   });
   
@@ -156,8 +162,11 @@
   });
 
   // Hide service type dropdown for user signup data.
-  function ser_type_change(ser_type){
-    if ($(ser_type).val() == "signups"){
+  function ser_type_change(){
+    if ($("#ser_type1").val() == "signups" || $("#ser_type2").val() == "signups"){
+      $("#sort").val("by_time");
+      $("#ser_value").val("num");
+      $("select option[value*='rev']").prop('disabled',true);
       $("#sort").addClass("hidden");
       $("#cats_num").addClass("hidden");
       $("#time_format").removeClass("hidden");
@@ -167,10 +176,10 @@
     };
   };
   $("#ser_type1").change(function(){
-    ser_type_change("#ser_type1")
+    ser_type_change()
   });
   $("#ser_type2").change(function(){
-    ser_type_change("#ser_type2")
+    ser_type_change()
   });
 
   // Heatmap-related hiding
@@ -195,6 +204,7 @@
       "sort":         $("#sort").val(),
       "res_num":      $("#cats_num").val(),
       "comp":         $("#comp").is(':checked'),
+      "comp_type":    $("#comp-type").val(),
       "start_date1":  $("#start_date1").val(),
       "end_date1":    $("#end_date1").val(),
       "ser_type2":    $("#ser_type2").val(),
@@ -223,6 +233,8 @@
     if (params.view == "table"){
       $("#chart1").addClass("hidden");
       $("#map-canvas").addClass("hidden");
+      $(params.map_name[0]).addClass("hidden");
+      $(params.map_name[1]).addClass("hidden");
       $("#table").removeClass("hidden");
     } else {
       $("#chart1").removeClass("hidden");

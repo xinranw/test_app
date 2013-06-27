@@ -1,4 +1,4 @@
-function graphHeatMap(data, params){
+function graphHeatMap(data , params){
   var cities = {
     "": {name: "", coords: new google.maps.LatLng(40.742037, -73.987563)},
     "newyork": {name: "newyork", coords: new google.maps.LatLng(40.742037, -73.987563)},
@@ -24,7 +24,7 @@ function graphHeatMap(data, params){
   for (var i = 0; i < data.length; i++){
     map_data[i] = [];
     for (var j = 0; j < data[i].length; j++){
-      map_data[i][j] = {location: new google.maps.LatLng(data[i][j].x, data[i][j].y), weight: data[i][j].count};
+      map_data[i][j] = {location: new google.maps.LatLng(data[i][j].x, data[i][j].y), weight: data[i][j].Count};
     }
   }
 
@@ -112,14 +112,14 @@ function graphHorizontalBar(data, params){
 
   var commasFormatter = d3.format(",0f");
   chart.showValues(true)
-    .tooltips(false)
-    .showControls(false)
-    .valueFormat(d3.format(",0f"))
-    .margin({ left: 200, right: 30});
+  .tooltips(false)
+  .showControls(false)
+  .valueFormat(d3.format(",0f"))
+  .margin({ left: 200, right: 30});
 
   chart.yAxis
-    .showMaxMin(true)
-    .tickFormat(d3.format(",0f"));
+  .showMaxMin(true)
+  .tickFormat(d3.format(",0f"));
 
   var yAxisLabel = "";
 
@@ -161,6 +161,35 @@ function graphHorizontalBar(data, params){
   return chart;
 }
 
+function barChartData(data, params){
+  if (params.sort == "by_time"){
+    var timeFormat = 'd';
+    switch (params.time_format){
+      case "year":
+      timeFormat = "yyyy";
+      break;
+      case "month":
+      timeFormat = (params.comp_type == "diff") ? 'MMM' : 'MMM-yy';
+      break;
+      case "day":
+      timeFormat = (params.comp_type == "diff") ? 'MMM-d' : 'd';
+      break;
+      case "hour":
+      timeFormat = "h tt";
+      break;
+      default:
+      alert("params.time_format fell through");
+      break;
+    }
+    for (var i = 0; i < data.length; i++){
+      for (var j = 0; j < data[i].values.length; j++){
+        data[i].values[j].x = new Date(data[i].values[j].x).toString(timeFormat);
+      }
+    }
+  }
+  return data;
+}
+
 function graphLineBarChart(data, params){
   var width = nv.utils.windowSize().width - 40,
   height = nv.utils.windowSize().height - 40;
@@ -168,6 +197,7 @@ function graphLineBarChart(data, params){
   if (params.sort == "by_time_cum") {
     chart = nv.models.lineChart();
   } else {
+    data = barChartData(data, params);
     chart.multibar.hideable(true);
   }
 
@@ -196,32 +226,32 @@ function graphLineBarChart(data, params){
   }
   chart.xAxis
   .showMaxMin(false)
-  .axisLabel(xAxisLabel)
-  .rotateLabels(
-    (params.sort == "by_time" || params.sort == "by_time_cum") ? 0 : -40);
-
-  var timeFormatter = d3.time.format("%x");
-  switch (params.time_format){
-    case "year":
-    timeFormatter = d3.time.format("%Y");
-    break;
-    case "month":
-    timeFormatter = d3.time.format("%Y-%b");
-    break;
-    case "day":
-    timeFormatter = d3.time.format("%Y/%m/%d");
-    break;
-    case "hour":
-    timeFormatter = d3.time.format("%I %p");
-    break;
-    default:
-    alert("params.sort fell through");
-    break;
+  .axisLabel(xAxisLabel);
+    // .rotateLabels(
+    //   (params.sort == "by_time" || params.sort == "by_time_cum") ? 0 : -40);
+  if (params.sort == "by_time" || params.sort == "by_time_cum"){
+    var timeFormatter = d3.time.format("%x");
+    switch (params.time_format){
+      case "year":
+      timeFormatter = d3.time.format("%Y");
+      break;
+      case "month":
+      timeFormatter = (params.comp) ? d3.time.format("%b") : d3.time.format("%Y-%b");
+      break;
+      case "day":
+      timeFormatter = (params.comp) ? d3.time.format("%b-%d") : d3.time.format("%Y/%m/%d");
+      break;
+      case "hour":
+      timeFormatter = d3.time.format("%I %p");
+      break;
+      default:
+      alert("params.sort fell through");
+      break;
+    }
+    chart.xAxis.tickFormat(function(d){
+      return timeFormatter(new Date(d));
+    });
   }
-
-  chart.xAxis.tickFormat(function(d){
-    return timeFormatter(new Date(d));
-  });
 
   chart.forceY([0]);
 
@@ -265,48 +295,90 @@ function graphTable(data, params){
   // Adds a header row to the table and returns the set of columns.
   // Need to do union of keys from all records as some records may not contain
   // all records
-  function addAllColumnHeaders(table_data){
-    var columnSet = [];
-    var columns = [];
+  function addAllColumnHeaders(data){
+    var columns = []; // Used for accessing data
+    var columnSet = []; // Used for displaying table headers
 
-    for (var key in table_data[0]) {
-      if ($.inArray(key, columnSet) == -1){
-        columnSet.push(key);
-        columns.push(key);
+    /* Stores hash keys to use as column headers from data */
+    for (var i = 0; i < data.length; i++){
+      columns[i] = [];
+      for (var key in data[i][0]){
+        columns[i].push(key);
+        columnSet.push(key.toUpperCase());
       }
     }
 
-    columns[0] = params.ser_type1.toUpperCase();
-    columns[1] = (params.ser_value == 'num') ? "SOLD" : ((params.ser_value == 'rev') ? "PROFIT" : params.ser_value);
-    columns[3] = (params.ser_value == 'num') ? "PROFIT" : ((params.ser_value == 'rev') ? "SOLD" : params.ser_value);
-
+    /* Uses columnSet to create table headers */
     var headerTr$ = $('<tr/>');
-    for (var i = 0 ; i < columns.length; i++){
-      headerTr$.append($('<th/>').html(columns[i]));
+    for (var i = 0 ; i < columnSet.length; i++){
+      headerTr$.append($('<th/>').html(columnSet[i]));
     }
     $(params.table_name).append(headerTr$);
 
-    return columnSet;
+    return columns;
   }
-  function buildHtmlTable(table_data) {
-    $(params.table_name).empty();
-    var columns = addAllColumnHeaders(table_data);
 
-    if (params.ser_value == "rev"){
-      for (var i = 0; i < table_data.length; i++){
-        table_data[i].y = "$" + table_data[i].y;
+  // function arrayLengthSum(arr, index, sum){
+  //   if (index === 0)
+  //     return sum + arr[index].length;
+  //   else
+  //     return arrayLengthSum(arr, index - 1, sum + arr[index].length);
+  // }
+
+  function buildHtmlTable(data) {
+    $(params.table_name).empty();
+    var columns = addAllColumnHeaders(data);
+
+    // data[i][j].y = "$" + data[i][j].y;
+    var timeFormatter = d3.time.format("%x");
+    if (params.sort == "by_time" || params.sort == "by_time_cum"){     
+      switch (params.time_format){
+        case "year":
+        timeFormatter = d3.time.format("%Y");
+        break;
+        case "month":
+        timeFormatter = d3.time.format("%Y-%b");
+        break;
+        case "day":
+        timeFormatter = d3.time.format("%Y/%m/%d");
+        break;
+        case "hour":
+        timeFormatter = d3.time.format("%I %p");
+        break;
+        default:
+        alert("params.sort fell through");
+        break;
       }
     }
 
-    for (var i = 0; i < table_data.length; i++) {
+    for (var i = 0; i < data.length; i++){
+      for (var j = 0; j < data[i].length; j++){
+        if ((params.sort == "by_time" || params.sort == "by_time_cum") && params.ser_value != "heatmap")
+          data[i][j][columns[i][0]] = timeFormatter(new Date(data[i][j][columns[i][0]]));
+        data[i][j]["PROFIT"] = "$" + data[i][j]["PROFIT"];
+      }
+    }
+
+    var maxRows = 0;
+    for (var i = 0; i < data.length; i++){
+      maxRows = Math.max(maxRows, data[i].length);
+    }
+    var cellValue = "";
+
+    for (var i = 0; i < maxRows; i++) {
       var row$ = $('<tr/>');
-      for (var colIndex = 0 ; colIndex < columns.length ; colIndex++) {
-        var cellValue = table_data[i][columns[colIndex]];
-        if (cellValue === null) { cellValue = ""; }
-        row$.append($('<td/>').html(cellValue));
+      for (var j = 0; j < data.length; j++){
+        for (var keyIndex = 0; keyIndex < columns[j].length; keyIndex++){
+          if (data[j][i])
+            cellValue = data[j][i][columns[j][keyIndex]];
+          else
+            cellValue = "";
+          row$.append($('<td/>').html(cellValue));
+        }
       }
       $(params.table_name).append(row$);
     }
+
   }
   // Moves data from column 'from' to 'to'
   function moveColumn (table, from, to) {
@@ -317,8 +389,9 @@ function graphTable(data, params){
       cols.eq(from).detach().insertBefore(cols.eq(to));
     });
   }
-  buildHtmlTable(data[0].values);
+
+  buildHtmlTable(data);
   // Rearrange table columns
-  moveColumn($(params.table_name), 1, 3);
-  moveColumn($(params.table_name), 3, 2);
+  // moveColumn($(params.table_name), 1, 3);
+  // moveColumn($(params.table_name), 3, 2);
 }

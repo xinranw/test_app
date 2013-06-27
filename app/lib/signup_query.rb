@@ -5,7 +5,7 @@ class SignupQuery < Query
   # Initializes an instance of SignupQuery class. Sets @@params to the parameters passed in
   # @param params [hash] the parameters passed in from query_controller
   def initialize(params)
-    if (params.has_key?("ser_type") && params.has_key?("ser_value") && params.has_key?("city") && params.has_key?("time_format") && params.has_key?("sort") && params.has_key?("res_num") && params.has_key?("comp") && params.has_key?("ser_value") && params.has_key?("start_date") && params.has_key?("end_date"))
+    if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:ser_value) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
     else 
       raise ArgumentError.new "missing parameters"
@@ -17,29 +17,31 @@ class SignupQuery < Query
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        group_by = "hour(x)"
-        order_by = "hour(x)"
+        group_by = "hour(c.created_at)"
+        order_by = "hour(c.created_at)"
       when "day"
-        group_by = "date(ii.created_at)"
-        order_by = "date(ii.created_at)"
+        group_by = "date(c.created_at)"
+        order_by = "date(c.created_at)"
       when "month"
-        group_by = "year(ii.created_at), month(ii.created_at)"
-        order_by = "ii.created_at"
+        group_by = "year(c.created_at), month(c.created_at)"
+        order_by = "c.created_at"
       when "year"
-        group_by = "year(ii.created_at)"
-        order_by = "year(ii.created_at)"
+        group_by = "year(c.created_at)"
+        order_by = "year(c.created_at)"
     end
 
     case @@params[:ser_value]
       when "num"
         y = "count(c.created_at)"
+        as_y = "NUMBER_OF"
     end
 
     join_statements = "
     JOIN lb_city_enums as lbce 
       ON lbce.id = c.lb_city_enum_id
     "
-    x = "ii.created_at"
+    x = "c.created_at"
+    as_x = "#{@@params[:time_format]}".upcase
     table_name = "clients as c"
     created_at = "c.created_at"
     start_date = @@params[:start_date]
@@ -48,7 +50,7 @@ class SignupQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as #{as_x}, #{y} as #{as_y}
       FROM 
         #{table_name}
       #{join_statements}

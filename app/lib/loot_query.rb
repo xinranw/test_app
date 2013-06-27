@@ -16,8 +16,8 @@ class LootQuery < Query
   def get_time_query
     case @@params[:time_format]
       when "hour"
-        group_by = "hour(x)"
-        order_by = "hour(x)"
+        group_by = "hour(ii.created_at)"
+        order_by = "hour(ii.created_at)"
       when "day"
         group_by = "date(ii.created_at)"
         order_by = "date(ii.created_at)"
@@ -32,11 +32,14 @@ class LootQuery < Query
     case @@params[:ser_value]
       when "rev"
         y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0)"
+        as_y = "PROFIT"
       when "num"
         y = "count(ii.price)"
+        as_y = "NUMBER_OF"
     end
     
     x = "ii.created_at"
+    as_x = "#{@@params[:time_format]}".upcase
     service_type = "&& (ii.type = 'LootServiceInvoiceItem')"
     join_statements = "
       LEFT JOIN loot_services ls ON ls.id = ii.item_id
@@ -52,7 +55,7 @@ class LootQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y} as y
+        #{x} as #{as_x}, #{y} as #{as_y}
       FROM 
         #{table_name}
       #{join_statements}
@@ -79,15 +82,18 @@ class LootQuery < Query
     case @@params[:sort]
       when "by_cats"
         x = "sc.display_name"
+        as_x = "SERVICE_CATEGORIES"
         group_by = "sc.display_name"
         join_statements += "
           JOIN service_categories as sc
             ON ls.service_category_id = sc.id"
       when "by_prov"
         x = "ls.name"
+        as_x = "LOOT"
         group_by = "ls.name"
       when "by_location"
         x = "z.name"
+        as_x = "ZONES"
         group_by = "z.name"
         join_statements +="
           JOIN zones as z
@@ -95,22 +101,24 @@ class LootQuery < Query
     end
     case @@params[:ser_value]
       when "rev"
+        as_y = "PROFIT"
         if @@params[:sort] == "by_prov"
-          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as y,
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as #{as_y},
                sp.name as PROVIDER,
                count(sp.name) as SOLD"
         else 
-          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as y"
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as #{as_y}"
         end
       when "num"
+        as_y = "NUMBER_OF"
         if @@params[:sort] == "by_cats"
-          y = "count(sc.display_name) as y"
+          y = "count(sc.display_name) as #{as_y}"
         elsif @@params[:sort] == "by_prov"
-          y = "count(ls.name) as y,
+          y = "count(ls.name) as #{as_y},
                sp.name as PROVIDER,
                round(sum(ii.price * ii.commission_rate / 100), 0) as PROFIT"
         elsif@@params[:sort] == "by_location"
-          y = "count(z.name) as y"
+          y = "count(z.name) as #{as_y}"
         end
     end
 
@@ -124,7 +132,7 @@ class LootQuery < Query
 
     @@sql = "
       SELECT 
-        #{x} as x, #{y}
+        #{x} as #{as_x}, #{y}
       FROM 
         #{table_name}
       #{join_statements}
@@ -133,7 +141,7 @@ class LootQuery < Query
       GROUP BY
         #{group_by}
       ORDER BY 
-        y DESC
+        #{as_y} DESC
       #{limit}
     "
     return @@sql
@@ -170,14 +178,14 @@ class LootQuery < Query
 
     sql = "
       SELECT 
-        #{x} as x, #{y} as y, #{count} as count
+        #{x} as Latitude, #{y} as Longitude, #{count} as Count
       FROM 
         #{table_name}
       #{join_statements}
       WHERE 
         (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') #{city}
       #{group_statement}
-      ORDER BY count DESC
+      ORDER BY Count DESC
     "
   end
 

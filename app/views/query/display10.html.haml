@@ -3,11 +3,11 @@
 
 
 :javascript
-  var d = new Date(Date.now());
-  var two_years_ago = (d.getFullYear() - 2) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
-  var last_year = (d.getFullYear() - 1) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var d = new Date();
+  var two_years_ago = (d.getFullYear() - 2) + "/" + d.getMonth() + "/" + d.getDate();
+  var last_year = (d.getFullYear() - 1) + "/" + d.getMonth() + "/" + d.getDate();
   var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
-  var tmrw = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + (d.getDate() + 1);
+  var tmrw = d.getFullYear() + "/" + d.getMonth() + "/" + (d.getDate() + 1);
   var params1 = {
     "url":          '#{query_fetch_path}',
     "ser_type1":    "bookings",
@@ -17,6 +17,7 @@
     "sort":         "by_time_cum",
     "res_num":      "10",
     "comp":         true,
+    "comp_type":    "diff",
     "start_date1":  last_year,
     "end_date1":    tmrw,
     "ser_type2":    "bookings",

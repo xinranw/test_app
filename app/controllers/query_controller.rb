@@ -43,7 +43,7 @@ class QueryController < ApplicationController
     end
 
     if params[:constants][:sort] == "by_time_cum"
-      @results = cumulate(@results)
+      @results = cumulate(@results, params)
     end
     # if request.xhr?
     #   render :json => @results
