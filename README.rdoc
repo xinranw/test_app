@@ -1,3 +1,31 @@
+== Data Visualization App
+
+== Data Flow
+
+1. Parameters for data to be fetched are set in the UI (user endpoint).
+2. Parameters sent to application.js - call_ajax function.
+    * { constants : {ser_value, time_format, sort, res_num, comp},
+        range1 : {ser_type, city, start_date, end_date},
+        range2 : {ser_type, city, start_date, end_date} 
+      }
+3. Ajax parameters sent to /controllers/query_controller/fetch. The controller creates a 'params' variable with the following keys:
+  * constants : {ser_value, time_format, sort, res_num, comp}
+  * data : { ser_type, city, start_date, end_date }
+4. The controller creates a query object from '/lib/query.rb'. Query.rb stores the parameters as 'params'. Based on the values of 'params[:ser_type]' (bookings, loots, or signups), the corresponding type of query object is initialized. 
+  * The specific query object is initialized with class parameter '@@params', which contains the passed-in paraemters, and '@@sql', a string which will contain the sql statement to be executed.
+5. Based on the type of visualization specified by params, query_controller calls the query method to build a sql statement that will get the necessary data. The resulting data is returned back to query_controller where it is stored into the '@results' variable.
+6. The '@results' variable is formatted into JSON and returned back to a views page and stored into 'data'. 
+7. Data then goes through the following application.js functions in order:
+  * format_data(data, params) - for general formatting and filling in of data
+  * graph_data(data, params) - for d3.js specific formatting
+  * add_graph(data, params) - based on params, calls the correct function in graph.js to generate the desired visualization
+8. Data is passed into a function for graphing in graph.js and displayed
+
+== Data structures
+
+
+* asdfasdf
+
 == Welcome to Rails
 
 Rails is a web-application framework that includes everything needed to create

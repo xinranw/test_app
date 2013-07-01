@@ -2,7 +2,6 @@ class QueryController < ApplicationController
   include QuerydataHelper
 
   def fetch
-
     # Data for range1
     params_1 = {
       :constants => params[:constants],

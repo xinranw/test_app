@@ -305,6 +305,7 @@ function capitalize(word){
  * To graph data 
  */
  function add_graph(data, params){
+  debugger;
   $("svg").empty();
   if (params.view == "graph"){
     // Graph heatmap 
