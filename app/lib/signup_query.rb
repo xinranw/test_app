@@ -7,6 +7,7 @@ class SignupQuery < Query
   def initialize(params)
     if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:ser_value) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
+      @@params[:end_date] = Date.parse(@@params[:end_date]) + 1
     else 
       raise ArgumentError.new "missing parameters"
     end
@@ -37,12 +38,12 @@ class SignupQuery < Query
     end
 
     join_statements = "
-    JOIN lb_city_enums as lbce 
+    JOIN clients as c  
       ON lbce.id = c.lb_city_enum_id
     "
     x = "c.created_at"
     as_x = "#{@@params[:time_format]}".upcase
-    table_name = "clients as c"
+    table_name = "lb_city_enums as lbce"
     created_at = "c.created_at"
     start_date = @@params[:start_date]
     end_date = @@params[:end_date]
@@ -55,10 +56,11 @@ class SignupQuery < Query
         #{table_name}
       #{join_statements}
       WHERE 
-        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}') && (aasm_state <> 'never_purchased' ) #{city}
+        (#{created_at} >= '#{start_date}') && (#{created_at} <= '#{end_date}')  #{city}
       GROUP BY
         #{group_by}
     "
+    # && (aasm_state <> 'never_purchased' )
     return @@sql
   end
   

@@ -1,0 +1,32 @@
+%h1 Signups in Last Week
+%div{:id => "chart1"}
+  %svg{:style => "height: 500px;"}
+
+:javascript
+  var d = new Date(Date.now());
+  var lw = new Date(d.getFullYear(), d.getMonth(), d.getDate()-7);
+  var last_week = 2012 + "/" + (lw.getMonth() + 1) + "/" + lw.getDate();
+  var today = 2012 + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var params = {
+    "url":          '#{query_fetch_path}',
+    "ser_type1":    "signups",
+    "ser_value":    "num",
+    "city1":         "",
+    "time_format":  "day",
+    "sort":         "by_time",
+    "res_num":      "5",
+    "comp":         false,
+    "comp_type":    "same",
+    "start_date1":  last_week,
+    "end_date1":    today,
+    "ser_type2":    "loots",
+    "city2":        "",
+    "start_date2":  last_week,
+    "end_date2":    today,
+    "chart_name":   '#chart1',
+    "map_name":     '#map-canvas',
+    "view":         "graph"
+  }
+  $(document).ready(function(){
+    call_ajax(params);
+  });

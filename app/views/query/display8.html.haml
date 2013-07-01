@@ -1,7 +1,12 @@
+%h1 Heatmaps of Clients and Providers based on Loots in NYC (2013)
 %div{:id => "map-canvas", :class => "grid-container"}
-  %div{:id => "map-1", :class => "grid-50"}
-  %div{:id => "map-2", :class => "grid-50"}
-
+  %div{:class => "grid-50"}
+    %h3 Clients' Locations
+    %div{:id => "map-1"}
+  %div{:class => "grid-50"}
+    %h3 Providers' Locations
+    %div{:id => "map-2"}
+    
 :javascript
   var d = new Date(Date.now());
   var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
@@ -15,6 +20,7 @@
     "sort":         "by_time",
     "res_num":      "5",
     "comp":         true,
+    "comp_type":    "same",
     "start_date1":  this_year,
     "end_date1":    today,
     "ser_type2":    "bookings",
@@ -22,7 +28,8 @@
     "start_date2":  this_year,
     "end_date2":    today,
     "chart_name":   '#chart1',
-    "map_name":     ['#map-1','#map-2']
+    "map_name":     ['#map-1','#map-2'],
+    "view":         "graph"
   }
   $(document).ready(function(){
     call_ajax(params);

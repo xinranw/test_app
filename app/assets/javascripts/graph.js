@@ -8,23 +8,26 @@ function graphHeatMap(data , params){
     "atlanta": {name: "atlanta", coords: new google.maps.LatLng()},
     "austin": {name: "austin", coords: new google.maps.LatLng()},
     "chicago": {name: "chicago", coords: new google.maps.LatLng()},
-    "dallas": {name: "dallas", coords: new google.maps.LatLng()}
-    // {name: "denver", coords: new google.maps.LatLng()},
-    // {name: "houston", coords: new google.maps.LatLng()},
-    // {name: "vegas", coords: new google.maps.LatLng()},
-    // {name: "philadelphia", coords: new google.maps.LatLng()},
-    // {name: "phoenix", coords: new google.maps.LatLng()},
-    // {name: "portland", coords: new google.maps.LatLng()},
-    // {name: "seattle", coords: new google.maps.LatLng()},
-    // {name: "dc", coords: new google.maps.LatLng()},
-    // {name: "sd", coords: new google.maps.LatLng()},
+    "dallas": {name: "dallas", coords: new google.maps.LatLng()},
+    "denver": {name: "denver", coords: new google.maps.LatLng()},
+    "houston": {name: "houston", coords: new google.maps.LatLng()},
+    "vegas": {name: "vegas", coords: new google.maps.LatLng()},
+    "philadelphia": {name: "philadelphia", coords: new google.maps.LatLng()},
+    "phoenix": {name: "phoenix", coords: new google.maps.LatLng()},
+    "portland": {name: "portland", coords: new google.maps.LatLng()},
+    "seattle": {name: "seattle", coords: new google.maps.LatLng()},
+    "dc": {name: "dc", coords: new google.maps.LatLng()},
+    "sd": {name: "sd", coords: new google.maps.LatLng()}
   };
   var heatmap = [], map = [], pointArray = [], map_data = [];
   google.maps.visualRefresh = true;
   for (var i = 0; i < data.length; i++){
     map_data[i] = [];
     for (var j = 0; j < data[i].length; j++){
-      map_data[i][j] = {location: new google.maps.LatLng(data[i][j].x, data[i][j].y), weight: data[i][j].Count};
+      map_data[i][j] = {
+        location: new google.maps.LatLng(data[i][j].x, data[i][j].y),
+        weight: data[i][j].Count
+      };
     }
   }
 
@@ -101,7 +104,6 @@ function graphHeatMap(data , params){
         " Int_2 = " + getNewMaxIntensity(map[1].getZoom(), map_data[1][0].weight));
     });
   }
-
   initialize();
 }
 
@@ -110,45 +112,38 @@ function graphHorizontalBar(data, params){
   height = nv.utils.windowSize().height - 40;
   var chart = nv.models.multiBarHorizontalChart();
 
-  var commasFormatter = d3.format(",0f");
   chart.showValues(true)
   .tooltips(false)
   .showControls(false)
   .valueFormat(d3.format(",0f"))
   .margin({ left: 200, right: 30});
 
+  /** 
+   * Format the y-axis
+   */
   chart.yAxis
   .showMaxMin(true)
   .tickFormat(d3.format(",0f"));
-
   var yAxisLabel = "";
-
   switch (params.ser_type1){
     case "bookings":
-    yAxisLabel = params.comp ? "Sales" : "Bookings";
-    break;
+      yAxisLabel = params.comp ? "Sales" : "Bookings";
+      break;
     case "loots":
-    yAxisLabel = params.comp ? "Sales" : "Loots";
-    break;
+      yAxisLabel = params.comp ? "Sales" : "Loots";
+      break;
     case "signups":
-    yAxisLabel = params.comp ? "" : "Signups";
-    break;
+      yAxisLabel = params.comp ? "" : "Signups";
+      break;
   }
-
   if (params.ser_value == "rev"){
     yAxisLabel = yAxisLabel + " Revenue ($1000's)";
-    chart.yAxis.tickFormat(function(d){return "$" + commasFormatter(d);});
+    chart.yAxis.tickFormat(function(d){return "$" + d3.format(",0f")(d);});
   } else if (params.ser_value == "num"){
     yAxisLabel = "Number of " +  yAxisLabel;
   } else
-  alert("invalid service value");
-
+    alert("invalid service value");
   chart.yAxis.axisLabel(yAxisLabel);
-
-  if (params.ser_value == "rev"){
-    chart.valueFormat(function(d) {return "$" + commasFormatter(d);});
-    chart.yAxis.tickFormat(function(d){return "$" + commasFormatter(d);});
-  }
 
   d3.select(params.chart_name + ' svg')
   .datum(data)
@@ -161,25 +156,25 @@ function graphHorizontalBar(data, params){
   return chart;
 }
 
-function barChartData(data, params){
+function formatBarChartData(data, params){
   if (params.sort == "by_time"){
     var timeFormat = 'd';
     switch (params.time_format){
       case "year":
-      timeFormat = "yyyy";
-      break;
+        timeFormat = "yyyy";
+        break;
       case "month":
-      timeFormat = (params.comp_type == "diff") ? 'MMM' : 'MMM-yy';
-      break;
+        timeFormat = (params.comp_type == "diff") ? 'MMM' : 'MMM-yy';
+        break;
       case "day":
-      timeFormat = (params.comp_type == "diff") ? 'MMM-d' : 'd';
-      break;
+        timeFormat = (params.comp_type == "diff") ? 'MMM-d' : 'd';
+        break;
       case "hour":
-      timeFormat = "h tt";
-      break;
+        timeFormat = "h tt";
+        break;
       default:
-      alert("params.time_format fell through");
-      break;
+        alert("params.time_format fell through");
+        break;
     }
     for (var i = 0; i < data.length; i++){
       for (var j = 0; j < data[i].values.length; j++){
@@ -191,94 +186,94 @@ function barChartData(data, params){
 }
 
 function graphLineBarChart(data, params){
-  var width = nv.utils.windowSize().width - 40,
-  height = nv.utils.windowSize().height - 40;
+  var width = nv.utils.windowSize().width - 40;
+  var height = nv.utils.windowSize().height - 40;
   var chart = nv.models.multiBarChart();
+  // Selects a line or bar chart
   if (params.sort == "by_time_cum") {
     chart = nv.models.lineChart();
   } else {
-    data = barChartData(data, params);
+    data = formatBarChartData(data, params);
     chart.multibar.hideable(true);
+    chart.showControls(false);
   }
-
-  chart.margin({left: 100});
+  chart.margin({ left: 100 });
   if (params.sort == "by_cats" || params.sort == "by_location")
-    chart.margin({ bottom: 150});
+    chart.margin({ bottom: 150 });
 
+  /**
+   * Format the xAxis
+   */
   var xAxisLabel = "";
   switch (params.sort){
     case "by_cats":
-    xAxisLabel = "Service Categories";
-    break;
+      xAxisLabel = "Service Categories";
+      break;
     case "by_prov":
-    xAxisLabel = "Providers";
-    break;
+      xAxisLabel = "Providers";
+      break;
     case "by_location":
-    xAxisLabel = "Zones";
-    break;
+      xAxisLabel = "Zones";
+      break;
     case "by_time":
     case "by_time_cum":
-    xAxisLabel = params.time_format;
-    break;
+      xAxisLabel = capitalize(params.time_format);
+      break;
     default:
-    alert("params.sort fell through");
-    break;
+      alert("params.sort fell through");
+      break;
   }
   chart.xAxis
   .showMaxMin(false)
   .axisLabel(xAxisLabel);
-    // .rotateLabels(
-    //   (params.sort == "by_time" || params.sort == "by_time_cum") ? 0 : -40);
-  if (params.sort == "by_time" || params.sort == "by_time_cum"){
+  if (params.sort == "by_time_cum"){
     var timeFormatter = d3.time.format("%x");
     switch (params.time_format){
       case "year":
-      timeFormatter = d3.time.format("%Y");
-      break;
+        timeFormatter = d3.time.format("%Y");
+        break;
       case "month":
-      timeFormatter = (params.comp) ? d3.time.format("%b") : d3.time.format("%Y-%b");
-      break;
+        timeFormatter = (params.comp) ? d3.time.format("%b") : d3.time.format("%Y-%b");
+        break;
       case "day":
-      timeFormatter = (params.comp) ? d3.time.format("%b-%d") : d3.time.format("%Y/%m/%d");
-      break;
+        timeFormatter = (params.comp) ? d3.time.format("%b-%d") : d3.time.format("%Y/%m/%d");
+        break;
       case "hour":
-      timeFormatter = d3.time.format("%I %p");
-      break;
+        timeFormatter = d3.time.format("%I %p");
+        break;
       default:
-      alert("params.sort fell through");
-      break;
+        alert("params.sort fell through");
+        break;
     }
     chart.xAxis.tickFormat(function(d){
       return timeFormatter(new Date(d));
     });
   }
 
+  /**
+   * Format the yAxis
+   */
   chart.forceY([0]);
-
   var yAxisLabel = "";
-
   switch (params.ser_type1){
     case "bookings":
-    yAxisLabel = params.comp ? "Sales" : "Bookings";
-    break;
+      yAxisLabel = params.comp ? "Sales" : "Bookings";
+      break;
     case "loots":
-    yAxisLabel = params.comp ? "Sales" : "Loots";
-    break;
+      yAxisLabel = params.comp ? "Sales" : "Loots";
+      break;
     case "signups":
-    yAxisLabel = params.comp ? "" : "Signups";
-    break;
+      yAxisLabel = params.comp ? "" : "Signups";
+      break;
   }
-
-  var commasFormatter = d3.format(",0f");
-
   if (params.ser_value == "rev"){
     yAxisLabel = yAxisLabel + " Revenue ($1000's)";
-    chart.yAxis.tickFormat(function(d){return "$" + commasFormatter(d);});
+    chart.yAxis.tickFormat(function(d){return "$" + d3.format(",0f")(d);});
   } else if (params.ser_value == "num"){
     yAxisLabel = "Number of " +  yAxisLabel;
+    chart.yAxis.tickFormat(function(d){return d3.format(",0f")(d);});
   } else
   alert("invalid service value");
-
   chart.yAxis.axisLabel(yAxisLabel);
 
   d3.select(params.chart_name + ' svg')
@@ -292,44 +287,34 @@ function graphLineBarChart(data, params){
 }
 
 function graphTable(data, params){
+  var columns = []; // Used for accessing data
+  var columnSet = []; // Used for displaying table headers
+
+  /* Stores hash keys to use as column headers from data */
+  for (var i = 0; i < data.length; i++){
+    columns[i] = [];
+    for (var key in data[i][0]){
+      columns[i].push(key);
+      columnSet.push(key.toUpperCase());
+    }
+  }
+
   // Adds a header row to the table and returns the set of columns.
   // Need to do union of keys from all records as some records may not contain
   // all records
   function addAllColumnHeaders(data){
-    var columns = []; // Used for accessing data
-    var columnSet = []; // Used for displaying table headers
-
-    /* Stores hash keys to use as column headers from data */
-    for (var i = 0; i < data.length; i++){
-      columns[i] = [];
-      for (var key in data[i][0]){
-        columns[i].push(key);
-        columnSet.push(key.toUpperCase());
-      }
-    }
-
     /* Uses columnSet to create table headers */
     var headerTr$ = $('<tr/>');
     for (var i = 0 ; i < columnSet.length; i++){
       headerTr$.append($('<th/>').html(columnSet[i]));
     }
     $(params.table_name).append(headerTr$);
-
-    return columns;
   }
-
-  // function arrayLengthSum(arr, index, sum){
-  //   if (index === 0)
-  //     return sum + arr[index].length;
-  //   else
-  //     return arrayLengthSum(arr, index - 1, sum + arr[index].length);
-  // }
 
   function buildHtmlTable(data) {
     $(params.table_name).empty();
-    var columns = addAllColumnHeaders(data);
+    addAllColumnHeaders(data);
 
-    // data[i][j].y = "$" + data[i][j].y;
     var timeFormatter = d3.time.format("%x");
     if (params.sort == "by_time" || params.sort == "by_time_cum"){     
       switch (params.time_format){
@@ -355,7 +340,7 @@ function graphTable(data, params){
       for (var j = 0; j < data[i].length; j++){
         if ((params.sort == "by_time" || params.sort == "by_time_cum") && params.ser_value != "heatmap")
           data[i][j][columns[i][0]] = timeFormatter(new Date(data[i][j][columns[i][0]]));
-        data[i][j]["PROFIT"] = "$" + data[i][j]["PROFIT"];
+        data[i][j]["PROFIT"] = "$" + data[i][j]["PROFIT"] * 1000;
       }
     }
 
@@ -391,7 +376,13 @@ function graphTable(data, params){
   }
 
   buildHtmlTable(data);
-  // Rearrange table columns
-  // moveColumn($(params.table_name), 1, 3);
-  // moveColumn($(params.table_name), 3, 2);
+  for (var i = 0; i < data.length; i++){
+    for (var j = 0; j < columns[i].length; j++){
+      if (columns[i][j] == "LOOT" && columns[i][j+1] == "PROFIT"){
+        moveColumn($(params.table_name), j+1, j+3);
+        moveColumn($(params.table_name), j+3, j+2);
+      }
+      break;
+    }
+  }
 }

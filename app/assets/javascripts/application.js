@@ -48,7 +48,7 @@ function call_ajax(params){
     },
     dataType: "json",
     success: function(data){
-      ajax_data = data;
+      ajax_data = $.extend([], data);
       // Parse JSON
       var f_data = format_data(data, params);
 
@@ -62,10 +62,13 @@ function call_ajax(params){
   $.ajax(ajax_options);
 }
 
-/* Parse through data to convert dates into date objects and numbers into floats */
-function format_data(data, params){
-
-  /* Stores hash keys from data */
+/**
+ * Parse through data to convert dates into date objects and numbers into floats 
+ */
+ function format_data(data, params){
+  /**
+   * Store hash keys from data 
+   */
   var keys = [];
   for (var i = 0; i < data.length; i++){
     keys[i] = [];
@@ -73,18 +76,19 @@ function format_data(data, params){
       keys[i].push(key);
     }
   }
-  /* For heatmap data:
-  ** Parse latitude (x) and longitude (y) **/
+  /** 
+   * For heatmap data:
+   * Store latitude (x) and longitude (y) data as floats.
+   */
   if (params.ser_value == "heatmap"){
     for (var i = 0; i < data.length; i++){
       for (var j = 0; j < data[i].length; j++){
-        data[i][j][keys[i][0]] = parseFloat(data[i][j][keys[i][0]]);
-        data[i][j][keys[i][1]] = parseFloat(data[i][j][keys[i][1]]);
+        for (var k = 0; k < keys[i].length; k++)
+          data[i][j][keys[i][k]] = parseFloat(data[i][j][keys[i][k]]);
       }
     }
   } else {
-    /* For time-based data 
-    ** Format the x axis datetime based on time format dropdown */
+    /*** Format time-based data ***/
     if (params.sort == "by_time" || params.sort == "by_time_cum"){
       for (var i = 0; i < data.length; i++){
         for (var j = 0; j < data[i].length; j++){
@@ -92,9 +96,10 @@ function format_data(data, params){
           data[i][j][keys[i][1]] = parseFloat(data[i][j][keys[i][1]]);
         }
       }
-      /*** Fill in hours with no data ***/
+      /**
+       * Fill in hours with no data 
+       */
       if (params.time_format == "hour"){
-        var today = new Date();
         // Array to be filled with all hours and corresponding sql data
         var temp = [];
         // To keep count for iterating through the sql data array
@@ -116,15 +121,9 @@ function format_data(data, params){
           data[i] = temp;
         }
       } /*** Fill in days with no data ***/
-      else if (params.time_format == "day"){     
+      else if (params.time_format == "day"){
         var start = data[0][0][keys[0][0]];
         var end = data[0][data[0].length-1][keys[0][0]];
-        // if (params.comp){
-        //   start = new Date(
-        //     Math.min(start, data[1][0][keys[0][0]]));
-        //   end = new Date(
-        //     Math.max(end, data[1][data[1].length-1][keys[0][0]]));
-        // }
         // Array to be filled with all days and corresponding sql data
         var temp = [];
         // To keep count for iterating through the sql data array
@@ -140,77 +139,11 @@ function format_data(data, params){
             temp[j] = $.extend({}, data[0][0]);
             temp[j][keys[i][0]] = start.clone().add(j).days();
             temp[j][keys[i][1]] = 0;
-            if (data[i][count] && 
-              data[i][count][keys[i][0]].getDay() == temp[j][keys[i][0]].getDay() && 
-              data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth() && 
+            if (data[i][count] &&
+              data[i][count][keys[i][0]].getDay() == temp[j][keys[i][0]].getDay() &&
+              data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth() &&
               data[i][count][keys[i][0]].getFullYear() == temp[j][keys[i][0]].getFullYear()) {
               temp[j] = data[i][count];
-            count++;
-          }
-        }
-        data[i] = temp;
-      }
-    } 
-    if (params.comp && params.comp_type == "diff"){
-      if (params.time_format == "month"){
-        var dur_start = data[0][0][keys[0][0]];
-        var dur_end = data[0][data[0].length-1][keys[0][0]];
-        var array_i = 0;
-        var duration = (dur_end.getFullYear() - dur_start.getFullYear() - 1) * 12 + dur_end.getMonth() + (12 - dur_start.getMonth());
-        for (var i = 0; i < data.length; i++){
-          dur_start = data[i][0][keys[0][0]];
-          dur_end = data[i][data[i].length-1][keys[0][0]];
-          var dur_temp = (dur_end.getFullYear() - dur_start.getFullYear() - 1) * 12 + dur_end.getMonth() + (12 - dur_start.getMonth());
-          if (dur_temp > duration){
-            duration = dur_temp;
-            array_i = i;
-          }
-        }
-        var start = new Date(data[array_i][0][keys[0][0]].getTime());
-        var end = new Date(data[array_i][data[array_i].length-1][keys[0][0]].getTime());
-        var temp = [];
-        var count = 0;
-        for (var i = 0; i < data.length; i++){
-          temp = [];
-          count = 0;
-          for (var j = 0; j < duration; j++){
-            temp[j] = $.extend({}, data[0][0]);
-            temp[j][keys[i][0]] = new Date(start.clone().add(j).months().getTime());
-            temp[j][keys[i][1]] = 0;
-            if (data[i][count] && data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth()){
-              temp[j][keys[i][1]] = data[i][count][keys[i][1]];
-              count++;
-            }
-          }
-          data[i] = temp;
-        }
-      } else if (params.time_format == "day"){
-        var dur_start = data[0][0][keys[0][0]];
-        var dur_end = data[0][data[0].length-1][keys[0][0]];
-        var array_i = 0;
-        var duration = Math.floor((dur_end - dur_start) / ( 1000 * 60 * 60 * 24));
-        for (var i = 0; i < data.length; i++){
-          dur_start = data[i][0][keys[0][0]];
-          dur_end = data[i][data[i].length-1][keys[0][0]];
-          var dur_temp = Math.floor((dur_end - dur_start) / ( 1000 * 60 * 60 * 24));
-          if (dur_temp > duration){
-            duration = dur_temp;
-            array_i = i;
-          }
-        }
-        var start = new Date(data[array_i][0][keys[0][0]].getTime());
-        var end = new Date(data[array_i][data[array_i].length-1][keys[0][0]].getTime());
-        var temp = [];
-        var count = 0;
-        for (var i = 0; i < data.length; i++){
-          temp = [];
-          count = 0;
-          for (var j = 0; j < duration; j++){
-            temp[j] = $.extend({}, data[0][0]);
-            temp[j][keys[i][0]] = new Date(start.clone().add(j).days().getTime());
-            temp[j][keys[i][1]] = 0;
-            if (data[i][count] && data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth() && data[i][count][keys[i][0]].getDate() == temp[j][keys[i][0]].getDate() ){
-              temp[j][keys[i][1]] = data[i][count][keys[i][1]];
               count++;
             }
           }
@@ -218,36 +151,113 @@ function format_data(data, params){
         }
       }
     }
+    /**  
+     *  If different time periods, set the same dates so that graphs will overlap. Then match the 
+     *  dates and set the Count data of the generated dates                                    
+     */
+    if (params.comp && params.comp_type == "diff"){
+      var dur_start = data[0][0][keys[0][0]];
+      var dur_end = data[0][data[0].length-1][keys[0][0]];
+      var array_i = 0;
+      var duration = 0;
+      var dates_equal = false;
+      var get_dur = function(start, end){
+        if (params.time_format == "month")
+          return (end.getFullYear() - start.getFullYear() - 1) * 12 + end.getMonth() + (12 - start.getMonth());
+        else if (params.time_format == "day")
+          return Math.floor((end - start) / ( 1000 * 60 * 60 * 24));
+      };
+      for (var i = 0; i < data.length; i++){
+        dur_start = data[i][0][keys[0][0]];
+        dur_end = data[i][data[i].length-1][keys[0][0]];
+        var dur_temp = get_dur(dur_start, dur_end);
+        if (dur_temp > duration){
+          duration = dur_temp;
+          array_i = i;
+        }
+      }
+      var start = new Date(data[array_i][0][keys[0][0]].getTime());
+      var end = new Date(data[array_i][data[array_i].length-1][keys[0][0]].getTime());
+      var temp = [];
+      var count = 0;
+      for (var i = 0; i < data.length; i++){
+        temp = [];
+        count = 0;
+        for (var j = 0; j < duration; j++){
+          temp[j] = $.extend({}, data[0][0]);
+          temp[j][keys[i][0]] =
+          (params.time_format == "month") ? new Date(start.clone().add(j).months().getTime()) :
+          ((params.time_format == "day") ? new Date(start.clone().add(j).days().getTime()) : new Date());
+          temp[j][keys[i][1]] = 0;
+          dates_equal =
+          ((params.time_format == "month") && data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth()) ||
+          ((params.time_format == "day") && data[i][count][keys[i][0]].getMonth() == temp[j][keys[i][0]].getMonth() && data[i][count][keys[i][0]].getDate() == temp[j][keys[i][0]].getDate());
+          if (data[i][count] && dates_equal){
+            temp[j][keys[i][1]] = data[i][count][keys[i][1]];
+            count++;
+          }
+        }
+        data[i] = temp;
+      }
+    }
+    /**
+     * Convert times into unixtime for d3.js to graph 
+     */
     if (params.sort == "by_time" || params.sort == "by_time_cum"){
-      /* Convert times into unixtime for d3.js to graph */
       for (var i = 0; i < data.length; i++){
         for (var j = 0; j < data[i].length; j++){
           data[i][j][keys[i][0]] = data[i][j][keys[i][0]].getTime();
         }
       }
     }
-  } /*** For categorical data ***/
-  else {
-    for (var i = 0; i < data.length; i++){
-      for (var j = 0; j < params.res_num; j++){
-        data[i][j][keys[i][0]] = data[i][j][keys[i][0]];
-        data[i][j][keys[i][1]] = parseFloat(data[i][j][keys[i][1]]);
+    /*** For categorical data ***/
+    else {
+      for (var i = 0; i < data.length; i++){
+        for (var j = 0; j < Math.min(params.res_num, data[i].length); j++){
+          data[i][j][keys[i][0]] = data[i][j][keys[i][0]];
+          data[i][j][keys[i][1]] = parseFloat(data[i][j][keys[i][1]]);
+        }
       }
     }
   }
-}
-return data;
+  return data;
 }
 
-/* Convert data into a format that can be used by the graphing function */
-function graph_data(data, params){
-  if (params.view == "table"){
-    return data;
-  }
-
-  /* Stores hash keys again from data */
-  var keys = [];
+/**
+ * Generate names based on settings for data ranges
+ */
+ function gen_range_names_helper(data, params){
+  var range = [];
+  var param_name = "";
   for (var i = 0; i < data.length; i++){
+    param_name = "ser_type" + (i+1);
+    range[i] = capitalize(params[param_name]) + " in ";
+    param_name = "city" + (i+1);
+    range[i] += capitalize(params[param_name] || "All Cities") + " ";
+    param_name = "start_date" + (i+1);
+    range[i] += "(" + (params[param_name] || "2007/8/31");
+      param_name = "end_date" + (i+1);
+      range[i] += "-" + params[param_name] + ")";
+}
+return range;
+}
+
+function capitalize(word){
+  return word[0].toUpperCase() + word.substring(1);
+}
+
+/**
+ * Convert data into a format that can be used by the graphs 
+ */
+ function graph_data(data, params){
+  if (params.view == "table")
+    return data;
+
+  /**
+   * Stores hash keys again from data 
+   */
+   var keys = [];
+   for (var i = 0; i < data.length; i++){
     keys[i] = [];
     for (var key in data[i][0]){
       keys[i].push(key);
@@ -260,38 +270,54 @@ function graph_data(data, params){
       data[i][j].y = data[i][j][keys[i][1]];
     }
   }
+  var formatted_data = [];
   if (params.ser_value == "heatmap"){
     return data;
   } else if (params.sort == "by_time_cum"){
-    var test_data = [];
+    var formatted_data = [];
     var colors = ["#1f77b4", "#ff7f0e"];
+    var range = gen_range_names_helper(data, params);
     for (var i = 0; i < data.length; i++){
-      test_data.push({area: true, color: colors[i], key: "range" + i, values: data[i]});
+      formatted_data.push({
+        area: true,
+        color: colors[i],
+        key: range[i],
+        values: data[i]
+      });
     }
-    return test_data;
+    return formatted_data;
   } else {
-    var test_data = [];
+    var formatted_data = [];
+    var colors = ["#1f77b4", "#ff7f0e"];
+    var range = gen_range_names_helper(data, params);
     for (var i = 0; i < data.length; i++){
-      test_data.push({key: "range" + i, values: data[i]});
+      formatted_data.push({
+        key: range[i],
+        color: colors[i],
+        values: data[i]
+      });
     }
-    return test_data;
+    return formatted_data;
   }
 }
 
-/* To graph data */
-function add_graph(data, params){
+/**
+ * To graph data 
+ */
+ function add_graph(data, params){
+  $("svg").empty();
   if (params.view == "graph"){
-    /* Graph heatmap */
+    // Graph heatmap 
     if (params.ser_value == "heatmap"){
       graphHeatMap(data, params);
-    } else if (params.sort == "by_prov"){
-      /* Horizontal bar graphs for sorting by providers */
+    } else if (params.sort == "by_prov" || params.sort == "by_location"){
+      // Horizontal bar graphs for sorting by providers 
       graphHorizontalBar(data, params);
     } else {
       graphLineBarChart(data, params);
     }
   } else if(params.view == "table"){
-    /* Data table*/
+    // Data table
     graphTable(data, params);
   } else {
     alert("No view selected");

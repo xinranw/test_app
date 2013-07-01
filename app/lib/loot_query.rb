@@ -6,6 +6,7 @@ class LootQuery < Query
   def initialize(params)
     if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:ser_value) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
+      @@params[:end_date] = Date.parse(@@params[:end_date]) + 1
     else 
       raise ArgumentError.new "missing parameters"
     end
@@ -31,7 +32,7 @@ class LootQuery < Query
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0)"
+        y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 2)"
         as_y = "PROFIT"
       when "num"
         y = "count(ii.price)"
@@ -92,22 +93,28 @@ class LootQuery < Query
         as_x = "LOOT"
         group_by = "ls.name"
       when "by_location"
-        x = "z.name"
-        as_x = "ZONES"
-        group_by = "z.name"
-        join_statements +="
-          JOIN zones as z
-            ON sp.zone_id = z.id"
+        if (@@params[:city] == "")
+          x = "lbce.long_name"
+          as_x = "CITIES"
+          group_by = "lbce.long_name"
+        else 
+          x = "z.name"
+          as_x = "ZONES"
+          group_by = "z.name"
+          join_statements +="
+            JOIN zones as z
+              ON sp.zone_id = z.id"
+        end
     end
     case @@params[:ser_value]
       when "rev"
         as_y = "PROFIT"
         if @@params[:sort] == "by_prov"
-          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as #{as_y},
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 2) as #{as_y},
                sp.name as PROVIDER,
                count(sp.name) as SOLD"
         else 
-          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 0) as #{as_y}"
+          y = "round(sum(ii.price * ii.commission_rate / 100) / 1000, 2) as #{as_y}"
         end
       when "num"
         as_y = "NUMBER_OF"
@@ -118,7 +125,11 @@ class LootQuery < Query
                sp.name as PROVIDER,
                round(sum(ii.price * ii.commission_rate / 100), 0) as PROFIT"
         elsif@@params[:sort] == "by_location"
-          y = "count(z.name) as #{as_y}"
+          if (@@params[:city] == "")
+            y = "count(lbce.long_name)"
+          else
+            y = "count(z.name)"
+          end
         end
     end
 

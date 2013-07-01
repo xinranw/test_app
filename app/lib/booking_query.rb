@@ -1,10 +1,12 @@
 class BookingQuery < Query
-  @@params
+  require 'date'
+  @@params = {}
   @@sql = ""
 
   def initialize(params)
     if (params.has_key?(:ser_type) && params.has_key?(:ser_value) && params.has_key?(:city) && params.has_key?(:time_format) && params.has_key?(:sort) && params.has_key?(:res_num) && params.has_key?(:comp) && params.has_key?(:start_date) && params.has_key?(:end_date))
       @@params = params
+      @@params[:end_date] = Date.parse(@@params[:end_date]) + 1
     else 
       raise ArgumentError.new "missing parameters"
     end
@@ -30,7 +32,7 @@ class BookingQuery < Query
 
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(ii.price) / 1000, 0)"
+        y = "round(sum(ii.price) / 1000, 2)"
         as_y = "PROFIT"
       when "num"
         y = "count(ii.price)"
@@ -91,16 +93,22 @@ class BookingQuery < Query
         as_x = "BOOKING"
         group_by = "sp.name"
       when "by_location"
-        x = "z.name"
-        as_x = "ZONES"
-        group_by = "z.name"
-        join_statements +="
-          JOIN zones as z
-            ON sp.zone_id = z.id"
+        if (@@params[:city] == "")
+          x = "lbce.long_name"
+          as_x = "CITIES"
+          group_by = "lbce.long_name"
+        else 
+          x = "z.name"
+          as_x = "ZONES"
+          group_by = "z.name"
+          join_statements +="
+            JOIN zones as z
+              ON sp.zone_id = z.id"
+        end
     end
     case @@params[:ser_value]
       when "rev"
-        y = "round(sum(b.price) / 1000, 0)"
+        y = "round(sum(b.price) / 1000, 2)"
         as_y = "PROFIT"
       when "num"
         as_y = "NUMBER_OF"
@@ -109,7 +117,11 @@ class BookingQuery < Query
         elsif @@params[:sort] == "by_prov"
           y = "count(sp.name)"
         elsif @@params[:sort] == "by_location"
-          y = "count(z.name)"
+          if (@@params[:city] == "")
+            y = "count(lbce.long_name)"
+          else
+            y = "count(z.name)"
+          end
         end
     end
     table_name = "service_providers as sp"

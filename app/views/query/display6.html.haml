@@ -1,0 +1,32 @@
+%h1 Revenues by City (Last Month)
+%div{:id => "chart1"}
+  %svg{:style => "height: 500px;"}
+
+:javascript
+  var d = new Date();
+  var lm = Date.today().last().month();
+  var last_month = (lm.getFullYear()) + "/" + (lm.getMonth() + 1) + "/" + lm.getDate();
+  var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  var params = {
+    "url":          '#{query_fetch_path}',
+    "ser_type1":    "bookings",
+    "ser_value":    "rev",
+    "city1":         "",
+    "time_format":  "hour",
+    "sort":         "by_location",
+    "res_num":      "10",
+    "comp":         true,
+    "comp_type":    "same",
+    "start_date1":  last_month,
+    "end_date1":    today,
+    "ser_type2":    "loots",
+    "city2":        "",
+    "start_date2":  last_month,
+    "end_date2":    today,
+    "chart_name":   '#chart1',
+    "map_name":     '#map-canvas',
+    "view":         'graph'
+  }
+  $(document).ready(function(){
+    call_ajax(params);
+  });

@@ -1,10 +1,10 @@
+%h1 Bookings and Loots Revenue in last 24 hours
 %div{:id => "chart1"}
   %svg{:style => "height: 500px;"}
 
 :javascript
   var d = new Date(Date.now());
-  var today = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
-  var tmrw = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + (d.getDate() + 1);
+  var today = 2012 + "/" + (d.getMonth() + 1) + "/" + d.getDate();
   var params = {
     "url":          '#{query_fetch_path}',
     "ser_type1":    "bookings",
@@ -14,14 +14,16 @@
     "sort":         "by_time",
     "res_num":      "5",
     "comp":         true,
+    "comp_type":    "same",
     "start_date1":   today,
-    "end_date1":     tmrw,
+    "end_date1":     today,
     "ser_type2":    "loots",
     "city2":        "",
     "start_date2":  today,
-    "end_date2":    tmrw,
+    "end_date2":    today,
     "chart_name":   '#chart1',
     "map_name":     '#map-canvas',
+    "view":         'graph'
   }
   $(document).ready(function(){
     call_ajax(params);

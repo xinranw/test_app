@@ -54,6 +54,7 @@
   %input{:type => "text", :class => "datepicker", :id => "end_date1"} 
   %span{:class => "heatmap-hidden"}
     %select{:id => "sort"}
+      %option{:value => "", :disabled => "disabled", :selected => "selected"}Sort
       %option{:value => "by_time"} By Time
       %option{:value => "by_time_cum"} By Time (Cumulative)
       %option{:value => "by_cats"} By Service Category
@@ -133,6 +134,8 @@
     });
   });
 
+  $("#time_format").addClass('hidden');
+
   // Hides the second set of data option. Show if checkbox is checked.
   $("#range2").addClass("hidden");
   $("#comp-type").addClass("hidden");
@@ -168,8 +171,7 @@
       $("#ser_value").val("num");
       $("select option[value*='rev']").prop('disabled',true);
       $("#sort").addClass("hidden");
-      $("#cats_num").addClass("hidden");
-      $("#time_format").removeClass("hidden");
+      sort_change("#sort");
     } else {
       $("#sort").removeClass("hidden");
       sort_change("#sort");
@@ -193,8 +195,18 @@
     };
   });
 
+  function validate(){
+    if($("#sort").val() === "" && $("#ser_value").val() != "heatmap"){
+      alert("Please select a sorting option");
+      return false;   
+    }
+    return true;
+  }
+
   var params = {};
   $("#submit").click(function(){
+    if (!validate())
+      return;
     params = {
       "url":          '#{query_fetch_path}',
       "ser_type1":    $("#ser_type1").val(),
